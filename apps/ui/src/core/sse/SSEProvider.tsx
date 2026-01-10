@@ -3,7 +3,7 @@ import { SettingsContext } from "../settings/settingsContext";
 import { SSEContext } from "./SSEContext";
 import { SubscriptionManager, createSubsManager } from "./SubscriptionManager";
 
-export function SSEProvider({ children }) {
+export function SSEProvider({ children }: React.PropsWithChildren) {
     const { settings } = useContext(SettingsContext);
 
     const [subManager, setSubManager] = useState<SubscriptionManager>()
@@ -15,29 +15,33 @@ export function SSEProvider({ children }) {
 
 
     useEffect(() => {
-        if (settings.localBackend) {
-            setLoading(true);
-            setConnected(false);
-            setError(null);
-            const subManager = createSubsManager(settings.localBackend)
-            setSubManager(subManager);
-            subManager.onConnect(() => {
-                setLoading(false);
-                setConnected(true);
-            })
-            subManager.onError((error) => {
-                setLoading(false);
-                setConnected(false);
+        if (!settings.localBackend) {
+            return;
+        }
 
-                setError(error);
-            })
-            subManager.connect()
-        }
+        setLoading(true);
+        setConnected(false);
+        setError(null);
+        const manager = createSubsManager(settings.localBackend);
+        setSubManager(manager);
+        
+        manager.onConnect(() => {
+            setLoading(false);
+            setConnected(true);
+        });
+        
+        manager.onError((error) => {
+            setLoading(false);
+            setConnected(false);
+            setError(error);
+        });
+        
+        manager.connect();
+
         return () => {
-            console.log('qweqew')
-            subManager?.close();
-        }
-    }, [settings.localBackend, subManager])
+            manager.close();
+        };
+    }, [settings.localBackend])
 
 
 

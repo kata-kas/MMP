@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 export type MapOrEntries<K, V> = Map<K, V> | [K, V][]
 
@@ -18,31 +18,36 @@ export function useMap<K, V>(
 ): Return<K, V> {
   const [map, setMap] = useState(new Map(initialState))
 
-  const actions: Actions<K, V> = {
-    set: useCallback((key, value) => {
-      setMap(prev => {
-        const copy = new Map(prev)
-        copy.set(key, value)
-        return copy
-      })
-    }, []),
+  const set = useCallback((key: K, value: V) => {
+    setMap(prev => {
+      const copy = new Map(prev)
+      copy.set(key, value)
+      return copy
+    })
+  }, [])
 
-    setAll: useCallback(entries => {
-      setMap(() => new Map(entries))
-    }, []),
+  const setAll = useCallback((entries: MapOrEntries<K, V>) => {
+    setMap(() => new Map(entries))
+  }, [])
 
-    remove: useCallback(key => {
-      setMap(prev => {
-        const copy = new Map(prev)
-        copy.delete(key)
-        return copy
-      })
-    }, []),
+  const remove = useCallback((key: K) => {
+    setMap(prev => {
+      const copy = new Map(prev)
+      copy.delete(key)
+      return copy
+    })
+  }, [])
 
-    reset: useCallback(() => {
-      setMap(() => new Map())
-    }, []),
-  }
+  const reset = useCallback(() => {
+    setMap(() => new Map())
+  }, [])
+
+  const actions: Actions<K, V> = useMemo(() => ({
+    set,
+    setAll,
+    remove,
+    reset,
+  }), [set, setAll, remove, reset])
 
   return [map, actions]
 }

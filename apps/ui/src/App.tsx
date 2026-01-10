@@ -10,6 +10,7 @@ import { DiscoveryNotifications } from './system/components/discovery-notificati
 import { NewProjectNotification } from './projects/notifications/new-project-notification/NewProjectNotification.tsx';
 import { NewTempfileNotification } from './tempfiles/notifications/new-tempfile-notification/NewTempfileNotification.tsx';
 import { Skeleton } from './components/ui/skeleton';
+import { ErrorBoundary } from './core/error-boundary/ErrorBoundary';
 import {
   SidebarInset,
   SidebarProvider,
@@ -103,7 +104,9 @@ export default function App() {
                                 <Breadcrumbs />
                             </header>
                             <div className="flex flex-1 flex-col gap-4 p-4">
-                                <Outlet />
+                                <ErrorBoundary>
+                                    <Outlet />
+                                </ErrorBoundary>
                             </div>
                         </SidebarInset>
                     </SidebarProvider>

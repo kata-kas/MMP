@@ -5,6 +5,7 @@ import './index.css'
 import { ThemeProvider } from './components/theme-provider'
 import { Toaster } from './components/ui/sonner'
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ErrorBoundary } from './core/error-boundary/ErrorBoundary';
 
 import { routes as dashboardRoutes } from "./dashboard/routes.tsx";
 import { routes as projectRoutes } from "./projects/routes.tsx";
@@ -40,13 +41,14 @@ const router = createBrowserRouter([
         ],
     },
 ]);
-console.log(router);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <ThemeProvider defaultTheme="dark" attribute="class" enableSystem>
-            <RouterProvider router={router} />
-            <Toaster />
-        </ThemeProvider>
+        <ErrorBoundary>
+            <ThemeProvider defaultTheme="dark" attribute="class" enableSystem>
+                <RouterProvider router={router} />
+                <Toaster />
+            </ThemeProvider>
+        </ErrorBoundary>
     </React.StrictMode>
 )
