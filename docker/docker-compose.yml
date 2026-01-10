@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  mmp:
+    image: ghcr.io/${GITHUB_REPOSITORY:-maker-management-platform/mmp}:latest
+    container_name: mmp
+    volumes:
+      - ./library:/library
+      - ./data:/data
+      - ./config.toml:/app/config.toml
+    ports:
+      - "8081:8081"
+    environment:
+      - DATA_PATH=/data
+      - LIBRARY_PATH=/library
+      - THINGIVERSE_TOKEN=${THINGIVERSE_TOKEN:-}
+      - PORT=8000
+      - MAX_RENDER_WORKERS=${MAX_RENDER_WORKERS:-5}
+      - MODEL_RENDER_COLOR=${MODEL_RENDER_COLOR:-#167DF0}
+      - MODEL_BACKGROUND_COLOR=${MODEL_BACKGROUND_COLOR:-#FFFFFF}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
