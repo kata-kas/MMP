@@ -17,8 +17,8 @@ export function TempFiles() {
     const { settings } = useContext(SettingsContext);
     const [tempFiles, setTempFiles] = useState<TempFile[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
-    const [, callSendToProject] = useAxios({ url: `${settings.localBackend}/tempfiles/xxx`, method: 'post' }, { manual: true })
-    const [, callDeleteTemp] = useAxios({ url: `${settings.localBackend}/tempfiles/xxx/delete`, method: 'post' }, { manual: true })
+    const [, callSendToProject] = useAxios({ method: 'post' }, { manual: true })
+    const [, callDeleteTemp] = useAxios({ method: 'post' }, { manual: true })
     const [{ data, loading }] = useAxios<TempFile[]>(
         `${settings.localBackend}/tempfiles?_=${reload.current}`
     );
