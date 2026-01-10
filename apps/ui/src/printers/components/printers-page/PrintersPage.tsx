@@ -14,6 +14,7 @@ import { Header } from "@/core/header/Header";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logger } from "@/lib/logger";
 
 export function PrintersPage() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
@@ -40,7 +41,7 @@ export function PrintersPage() {
                 setPrinters(copy)
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }
 

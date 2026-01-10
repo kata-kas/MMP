@@ -10,6 +10,7 @@ import { Render } from "./parts/Render";
 import { Integrations } from "./parts/Integrations";
 import { AgentSettings } from "@/settings/entities/AgentSettings";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export function SettingsForm() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
@@ -66,7 +67,7 @@ export function SettingsForm() {
                 })
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     };
 

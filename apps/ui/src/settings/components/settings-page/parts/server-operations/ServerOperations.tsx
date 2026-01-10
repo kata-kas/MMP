@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useContext, useState, useCallback } from "react";
+import { logger } from "@/lib/logger";
 
 export function ServerOperations() {
     const { settings } = useContext(SettingsContext);
@@ -16,14 +17,13 @@ export function ServerOperations() {
     const onOk = useCallback(() => {
         setIsOpen(false);
         doDiscovery()
-            .then(({ data }) => {
-                console.log(data);
+            .then(() => {
                 toast.success('Great Success!', {
                     description: 'Global discovery started',
                 })
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }, [doDiscovery])
     return (

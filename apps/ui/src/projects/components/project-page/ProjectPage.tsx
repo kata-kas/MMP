@@ -29,7 +29,6 @@ export function ProjectPage() {
             />
             {error && <p>Error!</p>}
             {id && <ProjectPageBody projectUuid={id} project={project} onProjectChange={() => {
-                console.log("onProjectChange")
                 refetch()
             }} />}
             <Refresher projectUUID={id ?? ''} refresh={refetch} />

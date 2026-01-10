@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useContext, useEffect, useState } from "react";
+import { logger } from "@/lib/logger";
 
 type SentToPrinterBtnProps = {
     id: string
@@ -31,7 +32,7 @@ export function SendToPrinterBtn({ id }: SentToPrinterBtnProps) {
                 })
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }
 

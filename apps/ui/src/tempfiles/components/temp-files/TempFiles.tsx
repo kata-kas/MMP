@@ -10,6 +10,7 @@ import { ProjectSelect } from "./parts/project-select/ProjectSelect";
 import { Project } from "@/projects/entities/Project";
 import { Header } from "@/core/header/Header";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export function TempFiles() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
@@ -53,7 +54,7 @@ export function TempFiles() {
                 setActionLoading((s) => !s)
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
                 setActionLoading((s) => !s)
             });
     }
@@ -73,7 +74,7 @@ export function TempFiles() {
                 setActionLoading((s) => !s)
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
                 setActionLoading((s) => !s)
             });
     }

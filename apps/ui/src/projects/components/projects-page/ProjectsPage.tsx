@@ -5,8 +5,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 export function ProjectsPage() {
     const location = useLocation();
-    console.log(location.pathname.split('/').slice(1)[1]);
-
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<string>(location.pathname.split('/').slice(1)[1] ?? 'list');
 

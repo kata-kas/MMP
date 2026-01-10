@@ -2,6 +2,7 @@ import SSEContext from "@/core/sse/SSEContext";
 import { toast } from "sonner";
 import { useId, useContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 export function NewTempfileNotification() {
     const subscriberId = useId();
@@ -26,7 +27,6 @@ export function NewTempfileNotification() {
     }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
-        console.log(message)
         if (!message.state) return;
         const state = message.state as Record<string, unknown>;
         toast.success(`New temp file uploaded!`, {

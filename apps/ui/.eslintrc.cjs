@@ -17,5 +17,6 @@ module.exports = {
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unsafe-assignment": "error",
     "@typescript-eslint/no-unsafe-member-access": "error",
+    "no-console": ["warn", { allow: ["warn", "error"] }],
   },
 };

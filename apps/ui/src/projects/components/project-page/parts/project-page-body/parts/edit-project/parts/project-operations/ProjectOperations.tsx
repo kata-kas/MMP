@@ -13,6 +13,7 @@ import { DeleteBtn } from "./delete-btn/DeleteBtn";
 import { DiscoverBtn } from "./discover-btn/DiscoverBtn";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 type ProjectOperationsProps = {
     project: Project;
@@ -40,14 +41,13 @@ export function ProjectOperations({ project }: ProjectOperationsProps) {
                 path: path
             }
         }).then(({ data }) => {
-            console.log(data);
             setPath((data as { path?: string }).path ?? project.path)
             toast.success('Great Success!', {
                 description: 'Project moved',
             })
         })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }
     return (<>

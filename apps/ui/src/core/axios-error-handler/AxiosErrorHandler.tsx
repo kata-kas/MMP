@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import axios from "axios";
 import { useEffect, useRef } from "react";
+import { logger } from "@/lib/logger";
 
 export function AxiosErrorHandler() {
     const initialized = useRef(false);
@@ -12,7 +13,7 @@ export function AxiosErrorHandler() {
             async (error: unknown) => {
                 const axiosError = error as { code?: string; response?: { data?: { message?: string } }; message?: string };
                 if (axiosError.code !== "ERR_CANCELED") {
-                    console.log(error)
+                    logger.error(error)
                     const message = axiosError.response?.data?.message || axiosError.message || "An error occurred";
                     toast.error('Ops... An error occurred!', {
                         description: message,

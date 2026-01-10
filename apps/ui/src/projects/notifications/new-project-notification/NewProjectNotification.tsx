@@ -3,6 +3,7 @@ import { useId } from "react";
 import { toast } from "sonner";
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 export function NewProjectNotification() {
     const subscriberId = useId();
@@ -27,7 +28,6 @@ export function NewProjectNotification() {
     }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
-        console.log(message)
         if (!message.state) return;
         const state = message.state as Record<string, unknown>;
         if (state?.type == "new") {

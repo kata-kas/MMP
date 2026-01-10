@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ExperimentalFeatures, Settings, SettingsContext } from "../settings/settingsContext";
 import useAxios from "axios-hooks";
 import { useLocalStorage } from "usehooks-ts";
+import { logger } from "@/lib/logger";
 
 export function SettingsProvider({ loading, children }) {
     const [settings, setSettings] = useState<Settings>({} as Settings);
@@ -23,12 +24,11 @@ export function SettingsProvider({ loading, children }) {
                 getAgentSettings({ url: `${s.localBackend}/system/settings` })
                     .then(({ data: agent }) => {
                         setSettings(prev => ({ ...prev, ...s, agent: agent as Record<string, unknown> }))
-                        console.log(s);
                         setReady(true);
                     })
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }, [getSettings, getAgentSettings])
 

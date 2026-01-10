@@ -4,6 +4,7 @@ import "/node_modules/react-resizable/css/styles.css"
 import { useContext, useState } from "react";
 import { Widget, } from "./parts/widget/Widget";
 import { dashboardContext } from "@/dashboard/provider/DashboardContext";
+import { logger } from "@/lib/logger";
 
 import { Responsive, WidthProvider } from "react-grid-layout";
 const ReactGridLayout = WidthProvider(Responsive);
@@ -27,7 +28,6 @@ export function Dashboard() {
             edit={edit}
             toggleEdit={toggleEdit}
             addItem={(item) => {
-                console.log(item);
                 setWidgets([...widgets, item.widget])
             }} />
         <ReactGridLayout
@@ -35,7 +35,6 @@ export function Dashboard() {
             isDraggable={!locked}
             isResizable={!locked}
             onLayoutChange={(l, ls) => {
-                console.log(l, ls['lg'] ? (ls['lg'] as unknown[])[0] : ls['lg']);
                 setLayout(ls)
             }}
             layouts={layout}

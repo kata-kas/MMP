@@ -9,6 +9,7 @@ import { IconPlugConnected } from "@tabler/icons-react";
 import useAxios from "axios-hooks";
 import { useContext, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { logger } from "@/lib/logger";
 
 type PrinterFormProps = {
     printer?: Printer
@@ -49,7 +50,7 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
                 })
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     };
 
@@ -66,7 +67,7 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
                     if (responseData.status) form.setValue('status', responseData.status)
                 })
                 .catch((e) => {
-                    console.log(e)
+                    logger.error(e)
                 });
         }
     }

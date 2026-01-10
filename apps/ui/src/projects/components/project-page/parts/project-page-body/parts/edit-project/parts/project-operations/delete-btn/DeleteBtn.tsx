@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useCallback, useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 interface DeleteBtnProps {
     projectUuid: string;
@@ -23,15 +24,14 @@ export function DeleteBtn({ projectUuid }: DeleteBtnProps) {
     const onOk = useCallback(() => {
         setIsOpen(false);
         doDelete()
-            .then(({ data }) => {
-                console.log(data);
+            .then(() => {
                 toast.success('Great Success!', {
                     description: 'Project deleted',
                 })
                 navigate(`/projects?tab=list`)
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }, [doDelete, navigate])
 

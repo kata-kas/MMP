@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useCallback, useContext, useState } from "react";
+import { logger } from "@/lib/logger";
 
 interface DiscoverBtnProps {
     projectUuid: string;
@@ -20,14 +21,13 @@ export function DiscoverBtn({ projectUuid }: DiscoverBtnProps) {
     const onOk = useCallback(() => {
         setIsOpen(false);
         doDiscovery()
-            .then(({ data }) => {
-                console.log(data);
+            .then(() => {
                 toast.success('Great Success!', {
                     description: 'Project discovery started',
                 })
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }, [doDiscovery])
 

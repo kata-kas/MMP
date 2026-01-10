@@ -3,6 +3,7 @@ import { useId } from "react";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
+import { logger } from "@/lib/logger";
 
 export function DiscoveryNotifications() {
     const subscriberId = useId();
@@ -28,7 +29,6 @@ export function DiscoveryNotifications() {
     }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
-        console.log(message)
         if (!message.state) return;
         const state = message.state as Record<string, unknown>;
         if (state?.state == "started") {

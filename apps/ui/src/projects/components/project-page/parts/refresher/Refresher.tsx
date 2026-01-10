@@ -1,6 +1,7 @@
 import SSEContext from "@/core/sse/SSEContext";
 import { useId } from "react";
 import { useContext, useEffect, useState } from "react";
+import { logger } from "@/lib/logger";
 
 type RefresherProps = {
     projectUUID: string;
@@ -30,7 +31,6 @@ export function Refresher({ projectUUID, refresh }: RefresherProps) {
     }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
-        console.log(projectUpdate)
         if (!projectUpdate.state) return;
         const state = projectUpdate.state as Record<string, unknown>;
         if (state?.projectUUID == projectUUID && state?.type == "update") {

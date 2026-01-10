@@ -1,6 +1,7 @@
 import axios from "axios"
 import { Subscription } from "./SSEContext"
 import ReconnectingEventSource from "reconnecting-eventsource";
+import { logger } from "@/lib/logger";
 
 type State = {
     url: string
@@ -42,7 +43,7 @@ export const createSubsManager = (url: string): SubscriptionManager => {
             state.source.onmessage = (e: MessageEvent) => {
                 const ev = JSON.parse(e.data) as { event?: string; data?: { uuid?: string; name?: string; state?: unknown } | unknown[] | unknown };
                 if (ev.event === 'connect') {
-                    console.log("Connected", ev);
+                    logger.log("Connected", ev);
                     const connectData = ev.data as { uuid?: string };
                     state.sessionId = connectData.uuid ?? null;
                     state.onConnect && state.onConnect()
@@ -75,7 +76,7 @@ export const createSubsManager = (url: string): SubscriptionManager => {
                 }
             }
             state.source.onerror = (e: Event) => {
-                console.log("Error", e);
+                logger.error("Error", e);
                 state.evSubs = new Map<string, Subscription[]>();
                 state.subs = new Map<string, Subscription[]>();
                 state.providers = new Map<string, number>();
@@ -94,7 +95,7 @@ export const createSubsManager = (url: string): SubscriptionManager => {
                     }
                 });
                 if (alreadySubed) {
-                    console.log("already Subed");
+                    logger.log("already Subed");
                     return null;
                 }
                 state.providers.set(sub.provider, state.providers.get(sub.provider) + 1);
@@ -106,9 +107,8 @@ export const createSubsManager = (url: string): SubscriptionManager => {
                 } else {
                     state.providers.set(sub.provider, 1);
                     const response = await axios.get(`${url}/${sub.provider}/subscribe/${state.sessionId}`)
-                    console.log(response);
                     if (response.status !== 200) {
-                        console.log(response);
+                        logger.error("Failed to subscribe", response);
                         state.providers.delete(sub.provider);
                         state.evSubs.delete(sub.event);
                         return new Error("Error subscribing to provider");
@@ -131,7 +131,7 @@ export const createSubsManager = (url: string): SubscriptionManager => {
                 state.providers.set(sub.provider, state.providers.get(sub.provider) - 1);
                 if (state.providers.get(sub.provider) <= 0) {
                     state.providers.delete(sub.provider);
-                    axios.get(`${url}/${sub.provider}/unsubscribe/${state.sessionId}`).catch(e => console.log(e));
+                    axios.get(`${url}/${sub.provider}/unsubscribe/${state.sessionId}`).catch(e => logger.error(e));
                 }
                 state.subs.delete(subId);
             })

@@ -5,6 +5,7 @@ import useAxios from "axios-hooks";
 import { useContext } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 type AddAssetProps = {
     projectUuid: string
@@ -30,14 +31,13 @@ export function AddAsset({ projectUuid }: AddAssetProps) {
                 formData.append("project_uuid", projectUuid);
                 formData.append("files", file);
                 executeSave({ data: formData })
-                    .then(({ data }) => {
-                        console.log(data);
+                    .then(() => {
                         toast.success('Great Success!', {
-                            description: `${(data as { name?: string }).name ?? 'Asset'} as added to your project!`,
+                            description: 'Asset added to your project!',
                         })
                     })
                     .catch((e) => {
-                        console.log(e)
+                        logger.error(e)
                     });
             }
         },

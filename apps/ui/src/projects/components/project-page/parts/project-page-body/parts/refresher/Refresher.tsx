@@ -3,6 +3,7 @@ import { useId } from "react";
 import { toast } from "sonner";
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 type RefresherProps = {
     projectUUID: string;
@@ -31,7 +32,6 @@ export function Refresher({ projectUUID }: RefresherProps) {
     }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
-        console.log(assetUpdate)
         if (!assetUpdate.state) return;
         const state = assetUpdate.state as Record<string, unknown>;
         if (projectUUID == state?.projectUUID) {

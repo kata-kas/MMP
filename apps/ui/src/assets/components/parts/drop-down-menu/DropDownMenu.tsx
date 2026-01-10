@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { IconDotsVertical, IconDownload, IconTrash } from "@tabler/icons-react";
 import useAxios from "axios-hooks";
 import { useContext } from "react";
+import { logger } from "@/lib/logger";
 
 type DropDownMenuProps = {
     id: string;
@@ -28,14 +29,12 @@ export function DropDownMenu({ id, projectUuid, children, downloadURL, onDelete,
     const handleDelete = () => {
         toggleLoad && toggleLoad();
         callDelete()
-            .then((data) => {
-                console.log(data);
+            .then(() => {
                 onDelete && onDelete();
             }).catch((e) => {
-                console.log(e);
+                logger.error(e);
             })
             .finally(() => {
-                console.log('finally')
                 toggleLoad && toggleLoad();
             })
     }

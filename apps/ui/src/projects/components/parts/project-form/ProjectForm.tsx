@@ -13,6 +13,7 @@ import { useDropzone } from "@/components/ui/dropzone";
 import { UploadPreview } from "../upload-preview/UploadPreview.tsx";
 import { cn } from "@/lib/utils";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 type ProjectFormProps = {
     project: Project;
@@ -64,7 +65,7 @@ export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFor
                 })
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     };
 

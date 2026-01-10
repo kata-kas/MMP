@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Heart } from "lucide-react";
 import useAxios from "axios-hooks";
 import { useCallback, useContext } from "react";
+import { logger } from "@/lib/logger";
 
 export type SetAsMainProps = {
     projectUuid: string;
@@ -27,15 +28,14 @@ export function SetAsMain({ projectUuid, assetId, onChange }: SetAsMainProps) {
                 default_image_id: assetId
             }
         })
-            .then(({ data }) => {
-                console.log(data);
+            .then(() => {
                 toast.success('Great Success!', {
                     description: 'Project main image updated!',
                 })
                 onChange()
             })
             .catch((e) => {
-                console.log(e)
+                logger.error(e)
             });
     }, [projectUuid, assetId, callSetMainImage, onChange]);
 
