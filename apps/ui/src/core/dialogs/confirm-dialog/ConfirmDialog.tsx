@@ -1,4 +1,5 @@
-import { Button, Dialog, Group, Text } from "@mantine/core";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 
 interface ConfirmDialogProps {
@@ -11,19 +12,30 @@ export function ConfirmDialog({ opened, onOk, onCancel }: ConfirmDialogProps) {
     const [isOpen, setIsOpen] = useState(opened);
 
     useEffect(() => {
-        console.log("opened", opened)
         setIsOpen(opened);
     }, [opened])
-    return (
-        <Dialog opened={isOpen} size="md" radius="md">
-            <Text size="sm" mb="xs" fw={500}>
-                Are you sure?
-            </Text>
 
-            <Group align="flex-start">
-                <Button color="red" onClick={onOk}>Yes, leave me alone!</Button>
-                <Button onClick={onCancel}>No</Button>
-            </Group>
+    const handleCancel = () => {
+        setIsOpen(false);
+        onCancel?.();
+    }
+
+    const handleOk = () => {
+        setIsOpen(false);
+        onOk();
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Are you sure?</DialogTitle>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="destructive" onClick={handleOk}>Yes, leave me alone!</Button>
+                    <Button variant="outline" onClick={handleCancel}>No</Button>
+                </DialogFooter>
+            </DialogContent>
         </Dialog>
     )
 }

@@ -1,6 +1,10 @@
 import { Project } from "@/projects/entities/Project";
-import { CheckIcon, Combobox, Group, InputBase, Loader, useCombobox } from "@mantine/core";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 type ProjectSelectProps = {
     boosted: string[];
@@ -11,13 +15,9 @@ type ProjectSelectProps = {
 }
 
 export function ProjectSelect({ boosted, projects, value, onChange, loading }: ProjectSelectProps) {
-    const combobox = useCombobox({
-        onDropdownClose: () => combobox.resetSelectedOption(),
-        onDropdownOpen: () => combobox.updateSelectedOptionIndex('active'),
-    });
+    const [open, setOpen] = useState(false);
     const [sValue, setSValue] = useState('');
     const [options, setOptions] = useState<Project[]>([])
-
 
     useEffect(() => {
         if (!value && projects && boosted.length === 1) {
@@ -27,7 +27,7 @@ export function ProjectSelect({ boosted, projects, value, onChange, loading }: P
                 onChange(p);
             }
         }
-    }, [projects, boosted, value])
+    }, [projects, boosted, value, onChange])
 
     useEffect(() => {
         if (!projects || value === sValue) return;
@@ -35,7 +35,7 @@ export function ProjectSelect({ boosted, projects, value, onChange, loading }: P
         if (p) {
             onChange(p);
         }
-    }, [sValue])
+    }, [sValue, projects, value, onChange])
 
     useEffect(() => {
         if (loading || !projects) return;
@@ -49,42 +49,59 @@ export function ProjectSelect({ boosted, projects, value, onChange, loading }: P
             if (boosted.includes(p1.uuid)) return -9
             return p1.name.localeCompare(p2.name)
         }))
-    }, [loading, projects])
-
-
+    }, [loading, projects, sValue, boosted])
 
     return (
-        <Combobox store={combobox} onOptionSubmit={(optionValue) => {
-            setSValue(optionValue)
-            combobox.closeDropdown();
-        }}>
-            <Combobox.Target>
-                <InputBase
-                    placeholder="Project"
-                    value={sValue}
-                    onChange={(event) => {
-                        setSValue(event.currentTarget.value)
-                        combobox.openDropdown();
-                        combobox.updateSelectedOptionIndex();
-                    }}
-                    rightSection={loading ? <Loader size={18} /> : <Combobox.Chevron />}
-                    onClick={() => combobox.openDropdown()}
-                    onFocus={() => combobox.openDropdown()}
-                    onBlur={() => combobox.closeDropdown()}
-                />
-            </Combobox.Target>
-
-            <Combobox.Dropdown>
-                <Combobox.Options>
-                    {options.length > 0 ? options.map((p) => (
-                        <Combobox.Option value={p.name} key={p.uuid} active={sValue.includes(p.name)}>
-                            <Group gap="sm">
-                                {sValue.includes(p.name) ? <CheckIcon size={12} /> : null}
-                                <span>{p.name}</span>
-                            </Group>
-                        </Combobox.Option>
-                    )) : <Combobox.Empty>Nothing found...</Combobox.Empty>}
-                </Combobox.Options>
-            </Combobox.Dropdown>
-        </Combobox>)
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between"
+                    disabled={loading}
+                >
+                    {sValue || "Select project..."}
+                    {loading ? (
+                        <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin" />
+                    ) : (
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+                <Command>
+                    <CommandInput 
+                        placeholder="Search project..." 
+                        value={sValue}
+                        onValueChange={setSValue}
+                    />
+                    <CommandList>
+                        <CommandEmpty>Nothing found...</CommandEmpty>
+                        <CommandGroup>
+                            {options.map((p) => (
+                                <CommandItem
+                                    key={p.uuid}
+                                    value={p.name}
+                                    onSelect={() => {
+                                        setSValue(p.name);
+                                        onChange(p);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            sValue.includes(p.name) ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {p.name}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    )
 }

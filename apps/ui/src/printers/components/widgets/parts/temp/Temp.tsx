@@ -1,5 +1,5 @@
-import {  Center, NumberFormatter, Stack, Text } from "@mantine/core"
 import React, { ReactElement } from "react"
+import { cn } from "@/lib/utils";
 
 interface TempProps {
     icon: ReactElement
@@ -9,12 +9,12 @@ interface TempProps {
 
 export function Temp({ icon, current, target }: TempProps) {
     return (
-        <Stack gap={0}>
-            <Center>{React.cloneElement(icon, {})}</Center>
-            <Text size="sm"><NumberFormatter value={(Math.round(current * 100) / 100).toFixed(1)} decimalScale={1} suffix="c" /></Text>
-            <Text size="sm"><NumberFormatter value={(Math.round(target * 100) / 100).toFixed(1)} decimalScale={1} suffix="c" /></Text>
-        </Stack>
+        <div className="flex flex-col gap-0">
+            <div className="flex items-center justify-center">{React.cloneElement(icon, {})}</div>
+            <p className="text-sm">{(Math.round(current * 100) / 100).toFixed(1)}°c</p>
+            {target !== undefined && (
+                <p className="text-sm">{(Math.round(target * 100) / 100).toFixed(1)}°c</p>
+            )}
+        </div>
     )
-
-
 }

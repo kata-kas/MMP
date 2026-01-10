@@ -1,4 +1,4 @@
-import { rem, Tabs } from "@mantine/core";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IconPhoto, IconSettings } from "@tabler/icons-react";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -7,28 +7,29 @@ export function ProjectsPage() {
     const location = useLocation();
     console.log(location.pathname.split('/').slice(1)[1]);
 
-    const iconStyle = { width: rem(12), height: rem(12) };
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<string | null>(location.pathname.split('/').slice(1)[1] ?? 'list');
-
+    const [activeTab, setActiveTab] = useState<string>(location.pathname.split('/').slice(1)[1] ?? 'list');
 
     return (
         <>
-            <Tabs value={activeTab} onChange={(v) => {
+            <Tabs value={activeTab} onValueChange={(v) => {
                 setActiveTab(v);
                 navigate(`/projects/${v}`);
             }}>
-                <Tabs.List>
-                    <Tabs.Tab value="list" leftSection={<IconPhoto style={iconStyle} />}>
+                <TabsList>
+                    <TabsTrigger value="list">
+                        <IconPhoto className="mr-2 h-3 w-3" />
                         Projects
-                    </Tabs.Tab>
-                    <Tabs.Tab value="import" ml="auto" leftSection={<IconSettings style={iconStyle} />}>
+                    </TabsTrigger>
+                    <TabsTrigger value="import" className="ml-auto">
+                        <IconSettings className="mr-2 h-3 w-3" />
                         Import
-                    </Tabs.Tab>
-                    <Tabs.Tab value="new" leftSection={<IconSettings style={iconStyle} />}>
+                    </TabsTrigger>
+                    <TabsTrigger value="new">
+                        <IconSettings className="mr-2 h-3 w-3" />
                         New
-                    </Tabs.Tab>
-                </Tabs.List>
+                    </TabsTrigger>
+                </TabsList>
             </Tabs>
             <Outlet />
         </>

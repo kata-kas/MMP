@@ -1,4 +1,4 @@
-import { useId } from "@mantine/hooks";
+import { useId } from "react";
 import { Temp } from "../temp/Temp";
 import Printer3dNozzleHeatOutlineIcon from "mdi-react/Printer3dNozzleHeatOutlineIcon";
 import SSEContext from "@/core/sse/SSEContext";
@@ -9,7 +9,6 @@ import { useContext, useEffect, useState } from "react";
 interface HeaterTempProps {
     printerUuid: string;
 }
-
 
 export function ExtruderTemp({ printerUuid }: HeaterTempProps) {
     const subscriberId = useId();
@@ -31,7 +30,7 @@ export function ExtruderTemp({ printerUuid }: HeaterTempProps) {
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [printerUuid, connected])
+    }, [printerUuid, connected, subscriberId, subscribe, unsubscribe, setExtruder])
     return (
         <Temp icon={<Printer3dNozzleHeatOutlineIcon />} current={extruder?.temperature ?? 0} target={extruder?.target} />
     )

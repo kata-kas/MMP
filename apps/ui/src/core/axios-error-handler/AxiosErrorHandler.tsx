@@ -1,4 +1,4 @@
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import axios from "axios";
 import { useEffect, useRef } from "react";
 
@@ -13,11 +13,9 @@ export function AxiosErrorHandler() {
                 if (error.code != "ERR_CANCELED") {
                     console.log(error)
                     let message = error.response?.data?.message || error.message;
-                    notifications.show({
-                        title: 'Ops... An error occurred!',
-                        message,
-                        color: 'red',
-                        autoClose: false
+                    toast.error('Ops... An error occurred!', {
+                        description: message,
+                        duration: Infinity,
                     })
                 }
                 return Promise.reject(error);

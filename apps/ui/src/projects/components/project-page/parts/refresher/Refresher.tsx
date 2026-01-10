@@ -1,5 +1,5 @@
 import SSEContext from "@/core/sse/SSEContext";
-import { useId } from "@mantine/hooks";
+import { useId } from "react";
 import { useContext, useEffect, useState } from "react";
 
 type RefresherProps = {
@@ -35,6 +35,6 @@ export function Refresher({ projectUUID, refresh }: RefresherProps) {
         if (projectUpdate.state.projectUUID == projectUUID && projectUpdate.state.type == "update") {
             refresh();
         }
-    }, [projectUpdate])
+    }, [projectUpdate, projectUUID, refresh])
     return (<></>)
 }

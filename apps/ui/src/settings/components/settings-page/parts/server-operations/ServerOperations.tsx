@@ -1,7 +1,7 @@
 import { ConfirmDialog } from "@/core/dialogs/confirm-dialog/ConfirmDialog";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { Button, Fieldset } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useContext, useState, useCallback } from "react";
 
@@ -18,10 +18,8 @@ export function ServerOperations() {
         doDiscovery()
             .then(({ data }) => {
                 console.log(data);
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'Global discovery started',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'Global discovery started',
                 })
             })
             .catch((e) => {
@@ -29,9 +27,10 @@ export function ServerOperations() {
             });
     }, [doDiscovery])
     return (
-        <Fieldset legend="Discovery">
-        <Button color="blue" onClick={() => setIsOpen(true)} loading={loading}>Run discovery</Button>
+        <fieldset className="space-y-4 rounded-lg border p-4">
+            <legend className="px-2 text-sm font-medium">Discovery</legend>
+            <Button onClick={() => setIsOpen(true)} disabled={loading}>Run discovery</Button>
             <ConfirmDialog opened={isOpen} onOk={onOk} onCancel={() => setIsOpen(false)} />
-        </Fieldset >
+        </fieldset>
     )
 }

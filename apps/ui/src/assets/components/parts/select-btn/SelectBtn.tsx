@@ -1,5 +1,6 @@
 import { Icon3dRotate } from "@tabler/icons-react";
-import { ActionIcon, Checkbox, rem, useMantineTheme } from "@mantine/core";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import React, { ReactElement } from "react";
 
 type SelectBtnProps = {
@@ -9,17 +10,16 @@ type SelectBtnProps = {
 }
 
 export function SelectBtn({ selected, onChange, icon }: SelectBtnProps) {
-    const theme = useMantineTheme();
     const iconClone = React.cloneElement(icon || <Icon3dRotate/>, {
-        style: { width: rem(20), height: rem(20) },
-        color: theme.colors.blue[6],
+        className: "h-5 w-5",
         stroke: 1.5
     })
     return (
-        <ActionIcon variant="subtle" color="gray" onClick={() => onChange(true)}>
+        <Button variant="ghost" size="icon" onClick={() => onChange(true)}>
             {!selected && iconClone}
-            {selected &&
-                <Checkbox m={5} checked={selected} onChange={(event) => onChange(event.currentTarget.checked)} />}
-        </ActionIcon>
+            {selected && (
+                <Checkbox checked={selected} onCheckedChange={(checked) => onChange(checked as boolean)} />
+            )}
+        </Button>
     );
 }

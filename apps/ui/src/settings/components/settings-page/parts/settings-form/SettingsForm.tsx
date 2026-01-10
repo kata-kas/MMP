@@ -1,16 +1,16 @@
 import useAxios from "axios-hooks";
 import { useContext, useEffect, useRef } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { Button, Container, Fieldset, Group } from "@mantine/core";
+import { Button } from "@/components/ui/button";
 import { FormProvider, useForm } from "./context";
 import { Core } from "./parts/Core";
 import { Library } from "./parts/Library";
 import { Server } from "./parts/Server";
 import { Render } from "./parts/Render";
 import { Integrations } from "./parts/Integrations";
-import { Form } from "react-router-dom";
 import { AgentSettings } from "@/settings/entities/AgentSettings";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function SettingsForm() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
@@ -22,8 +22,8 @@ export function SettingsForm() {
         method: 'POST'
     }, { manual: true })
 
-    const form = useForm({
-        initialValues: {
+    const form = useForm<AgentSettings>({
+        defaultValues: {
             "core": {
                 "log": {
                     "enable_file": false,
@@ -53,20 +53,17 @@ export function SettingsForm() {
 
     useEffect(() => {
         if (data) {
-            form.setInitialValues(data);
-            form.setValues(data);
+            form.reset(data);
         }
-    }, [data])
+    }, [data, form])
 
-    const onSave = (settings: AgentSettings) => {
+    const onSave = (formData: AgentSettings) => {
         executeSave({
-            data: settings
+            data: formData
         })
             .then(({ data }) => {
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'Settings updated',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'Settings updated',
                 })
             })
             .catch((e) => {
@@ -75,22 +72,23 @@ export function SettingsForm() {
     };
 
     return (
-        <Container>
+        <div className="container mx-auto max-w-4xl">
             <FormProvider form={form}>
-                <Form onSubmit={form.onSubmit(onSave)}>
+                <form onSubmit={form.handleSubmit(onSave)}>
                     <Server />
                     <Core />
                     <Library />
                     <Render />
                     <Integrations />
-                    <Fieldset legend="Commit">
-                        <Group justify="flex-end">
-                            <Button type="submit" loading={sLoading || cLoading} color="red">Save</Button>
-                            <Button type="reset" onClick={form.reset}>Reset</Button>
-                        </Group>
-                    </Fieldset>
-                </Form>
+                    <fieldset className="mt-6 space-y-4 rounded-lg border p-4">
+                        <legend className="px-2 text-sm font-medium">Commit</legend>
+                        <div className="flex justify-end gap-2">
+                            <Button type="submit" disabled={sLoading || cLoading} variant="destructive">Save</Button>
+                            <Button type="button" variant="outline" onClick={() => form.reset()}>Reset</Button>
+                        </div>
+                    </fieldset>
+                </form>
             </FormProvider>
-        </Container>
+        </div>
     )
 }

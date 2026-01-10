@@ -1,5 +1,6 @@
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { ActionIcon, Menu, rem } from "@mantine/core";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { IconDotsVertical, IconDownload, IconTrash } from "@tabler/icons-react";
 import useAxios from "axios-hooks";
 import { useContext } from "react";
@@ -40,34 +41,41 @@ export function DropDownMenu({ id, projectUuid, children, downloadURL, onDelete,
     }
 
     return (
-        <Menu>
-            <Menu.Target>
-                <ActionIcon variant="subtle" color="gray">
-                    <IconDotsVertical
-                        style={{ width: rem(20), height: rem(20) }}
-                        color="gray"
-                        stroke={1.5}
-                    />
-                </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <IconDotsVertical className="h-5 w-5" stroke={1.5} />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
                 {children}
-                {openDetails &&
-                    <Menu.Item onClick={openDetails} leftSection={<IconDownload style={{ width: rem(14), height: rem(14) }} />}>
+                {openDetails && (
+                    <DropdownMenuItem onClick={openDetails}>
+                        <IconDownload className="mr-2 h-3.5 w-3.5" />
                         Details
-                    </Menu.Item>}
-                {downloadURL && <Menu.Item
-                    component="a"
-                    href={downloadURL}
-                    leftSection={<IconDownload style={{ width: rem(14), height: rem(14) }} />}
-                >Download</Menu.Item>}
-                {onDelete && <><Menu.Divider />
-                    <Menu.Item
-                        color="red"
-                        onClick={handleDelete}
-                        leftSection={<IconTrash style={{ width: rem(14), height: rem(14) }} />}
-                    >Delete</Menu.Item></>}
-            </Menu.Dropdown>
-        </Menu>
+                    </DropdownMenuItem>
+                )}
+                {downloadURL && (
+                    <DropdownMenuItem asChild>
+                        <a href={downloadURL}>
+                            <IconDownload className="mr-2 h-3.5 w-3.5" />
+                            Download
+                        </a>
+                    </DropdownMenuItem>
+                )}
+                {onDelete && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={handleDelete}
+                        >
+                            <IconTrash className="mr-2 h-3.5 w-3.5" />
+                            Delete
+                        </DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

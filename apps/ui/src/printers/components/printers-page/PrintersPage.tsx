@@ -2,33 +2,38 @@ import useAxios from "axios-hooks";
 import { AddPrinter } from "./parts/add-printer/AddPrinter";
 import { useContext, useEffect, useRef, useState } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { Anchor, Avatar, Badge, Group, Table, Text, ActionIcon, rem, Menu, Tabs } from "@mantine/core";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Printer, printerTypes } from "@/printers/entities/Printer";
 import { IconDots, IconPhoto, IconReportAnalytics, IconSettings, IconTrash } from "@tabler/icons-react";
 import { Header } from "@/core/header/Header";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function PrintersPage() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const iconStyle = { width: rem(12), height: rem(12) };
     const { settings } = useContext(SettingsContext);
     const [printers, setPrinters] = useState<Printer[]>([])
     const [{ data, loading: cLoading, error }] = useAxios({ url: `${settings.localBackend}/printers?_=${reload.current}` })
     const [{ loading: dLoading }, executeDelete] = useAxios({ method: 'POST' }, { manual: true })
+    
     useEffect(() => {
         setPrinters(data)
     }, [data]);
+    
     function deletePrinter(i: number): void {
         const printer = printers[i];
         executeDelete({
             url: `${settings.localBackend}/printers/${printer.uuid}/delete`
         })
             .then(() => {
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'Printer deleted!',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'Printer deleted!',
                 })
                 const copy = [...printers]
                 copy.splice(i, 1)
@@ -37,100 +42,104 @@ export function PrintersPage() {
             .catch((e) => {
                 console.log(e)
             });
-
     }
 
     return (<>
         <Header imagePath={'https://images.unsplash.com/photo-1611117775350-ac3950990985?q=80&w=2000&h=400&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'} />
-        <Tabs keepMounted={false} defaultValue="list">
-            <Tabs.List>
-                <Tabs.Tab value="list" leftSection={<IconPhoto style={iconStyle} />}>
+        <Tabs defaultValue="list">
+            <TabsList>
+                <TabsTrigger value="list">
+                    <IconPhoto className="mr-2 h-3 w-3" />
                     Printers
-                </Tabs.Tab>
-                <Tabs.Tab value="new" ml="auto" leftSection={<IconSettings style={iconStyle} />}>
+                </TabsTrigger>
+                <TabsTrigger value="new">
+                    <IconSettings className="mr-2 h-3 w-3" />
                     New
-                </Tabs.Tab>
-            </Tabs.List>
-            <Tabs.Panel value="list">
-                <Table.ScrollContainer minWidth={800}>
-                    <Table verticalSpacing="sm">
-                        <Table.Thead>
-                            <Table.Tr>
-                                <Table.Th>Name</Table.Th>
-                                <Table.Th>State</Table.Th>
-                                <Table.Th>Status</Table.Th>
-                                <Table.Th>Version</Table.Th>
-                                <Table.Th />
-                            </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
+                </TabsTrigger>
+            </TabsList>
+            <TabsContent value="list">
+                <ScrollArea className="w-full">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>State</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Version</TableHead>
+                                <TableHead />
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {printers && printers.map((printer, i) => (
-                                <Table.Tr key={printer.uuid}>
-                                    <Table.Td>
-                                        <Group gap="sm">
-                                            <Avatar size={30} src={printerTypes.get(printer.type).logo} radius={30} />
+                                <TableRow key={printer.uuid}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={printerTypes.get(printer.type)?.logo} />
+                                                <AvatarFallback>{printer.name[0]}</AvatarFallback>
+                                            </Avatar>
                                             <div>
-                                                <Text fz="sm" fw={500}>
+                                                <p className="text-sm font-medium">
                                                     {printer.name}
-                                                </Text>
-                                                <Text c="dimmed" fz="xs">
-                                                    <Anchor href={printer.address} target="_blank">
-                                                        {printer.address}
-                                                    </Anchor>
-                                                </Text>
+                                                </p>
+                                                <a 
+                                                    href={printer.address} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-muted-foreground hover:underline"
+                                                >
+                                                    {printer.address}
+                                                </a>
                                             </div>
-                                        </Group>
-                                    </Table.Td>
-                                    <Table.Td>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
                                         {printer.state}
-                                    </Table.Td>
-                                    <Table.Td>
-                                        <Badge color={printer.status == 'connected' ? 'blue' : 'red'} variant="light">
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={printer.status == 'connected' ? 'default' : 'destructive'}>
                                             {printer.status}
                                         </Badge>
-                                    </Table.Td>
-                                    <Table.Td>
-                                        <Text fz="sm">{printer.version}</Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                        <Group gap={0} justify="flex-end">
-                                            <Menu
-                                                transitionProps={{ transition: 'pop' }}
-                                                withArrow
-                                                position="bottom-end"
-                                                withinPortal
-                                            >
-                                                <Menu.Target>
-                                                    <ActionIcon variant="subtle" color="gray" loading={dLoading}>
-                                                        <IconDots style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                                                    </ActionIcon>
-                                                </Menu.Target>
-                                                <Menu.Dropdown>
-                                                    <Menu.Item
-                                                        component={Link} to={`/printers/${printer.uuid}`}
-                                                        leftSection={
-                                                            <IconReportAnalytics style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-                                                        }
-                                                    >Edit</Menu.Item>
-                                                    <Menu.Item onClick={() => deletePrinter(i)}
-                                                        leftSection={<IconTrash style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
-                                                        color="red"
-                                                    >Delete</Menu.Item>
-                                                </Menu.Dropdown>
-                                            </Menu>
-                                        </Group>
-                                    </Table.Td>
-                                </Table.Tr>
+                                    </TableCell>
+                                    <TableCell>
+                                        <p className="text-sm">{printer.version}</p>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-end">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" disabled={dLoading}>
+                                                        <IconDots className="h-4 w-4" stroke={1.5} />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link to={`/printers/${printer.uuid}`}>
+                                                            <IconReportAnalytics className="mr-2 h-4 w-4" stroke={1.5} />
+                                                            Edit
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem 
+                                                        onClick={() => deletePrinter(i)}
+                                                        className="text-destructive"
+                                                    >
+                                                        <IconTrash className="mr-2 h-4 w-4" stroke={1.5} />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </Table.Tbody>
+                        </TableBody>
                     </Table>
-                </Table.ScrollContainer>
-            </Tabs.Panel>
+                </ScrollArea>
+            </TabsContent>
 
-            <Tabs.Panel value="new" pt={'xl'}>
+            <TabsContent value="new">
                 <AddPrinter />
-            </Tabs.Panel>
+            </TabsContent>
         </Tabs>
-
     </>)
 }

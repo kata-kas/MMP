@@ -1,6 +1,6 @@
-import {SegmentedControl} from "@mantine/core";
-import {useEffect, useState} from "react";
-import {Asset} from "../../../../../assets/entities/Assets.ts";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useEffect, useState } from "react";
+import { Asset } from "../../../../../assets/entities/Assets.ts";
 
 type ProjectAssetsTypeFilterProps = {
     value: string;
@@ -8,21 +8,24 @@ type ProjectAssetsTypeFilterProps = {
     assetList: { asset: Asset, selected: boolean }[];
 }
 
-export function ProjectAssetsTypeFilter({assetList, value, onChange}: ProjectAssetsTypeFilterProps) {
-    const [assetTypes, setAssetTypes] = useState<{ label: string, value: string }[]>([{value: '', label: ''}]);
+export function ProjectAssetsTypeFilter({ assetList, value, onChange }: ProjectAssetsTypeFilterProps) {
+    const [assetTypes, setAssetTypes] = useState<{ label: string, value: string }[]>([{ value: '', label: '' }]);
     useEffect(() => {
         const t = new Set<string>();
         t.add('all');
         assetList.forEach(a => t.add(a.asset.asset_type));
         setAssetTypes([...t.values()].map(a => {
-            return {label: a.toUpperCase(), value: a}
+            return { label: a.toUpperCase(), value: a }
         }));
-
     }, [assetList]);
 
     return (
-        <>
-            <SegmentedControl mt={'sm'} size="md" radius="xl" data={assetTypes} value={value} onChange={onChange}/>
-        </>
+        <ToggleGroup type="single" value={value} onValueChange={(v) => v && onChange(v)} className="mt-2">
+            {assetTypes.map((type) => (
+                <ToggleGroupItem key={type.value} value={type.value} aria-label={type.label}>
+                    {type.label}
+                </ToggleGroupItem>
+            ))}
+        </ToggleGroup>
     );
 }

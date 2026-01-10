@@ -1,7 +1,6 @@
 import SSEContext from "@/core/sse/SSEContext";
-import { Anchor } from "@mantine/core";
-import { useId } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
+import { useId } from "react";
+import { toast } from "sonner";
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -31,9 +30,12 @@ export function NewProjectNotification() {
         console.log(message)
         if (!message.state) return;
         if (message.state.type == "new") {
-            notifications.show({
-                title: `New project found`,
-                message: <>Go to <Anchor component={Link} to={`/projects/${message.state.projectUUID}`}>{message.state.projectName}</Anchor></>,
+            toast.success(`New project found`, {
+                description: (
+                    <span>
+                        Go to <Link to={`/projects/${message.state.projectUUID}`} className="underline">{message.state.projectName}</Link>
+                    </span>
+                ),
             })
         }
     }, [message])

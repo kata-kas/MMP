@@ -1,7 +1,7 @@
 import { ConfirmDialog } from "@/core/dialogs/confirm-dialog/ConfirmDialog";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { Button } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useCallback, useContext, useState } from "react";
 
@@ -22,10 +22,8 @@ export function DiscoverBtn({ projectUuid }: DiscoverBtnProps) {
         doDiscovery()
             .then(({ data }) => {
                 console.log(data);
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'Project discovery started',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'Project discovery started',
                 })
             })
             .catch((e) => {
@@ -34,7 +32,9 @@ export function DiscoverBtn({ projectUuid }: DiscoverBtnProps) {
     }, [doDiscovery])
 
     return (<>
-        <Button color="blue" onClick={() => setIsOpen(true)} loading={loading}>Run discovery</Button>
+        <Button onClick={() => setIsOpen(true)} disabled={loading}>
+            {loading ? "Starting..." : "Run discovery"}
+        </Button>
         <ConfirmDialog opened={isOpen} onOk={onOk} onCancel={() => setIsOpen(false)} />
     </>
     )

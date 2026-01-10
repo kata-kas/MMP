@@ -1,4 +1,6 @@
-import { Container, Flex, Group, Pagination, rem, Select, Skeleton } from "@mantine/core";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter } from "./parts/project-filter-card/ProjectFilterCard.tsx";
 import { ProjectCard } from "./parts/project-card/ProjectCard.tsx";
 import { useSearchParams } from "react-router-dom";
@@ -16,7 +18,6 @@ export function ProjectsList() {
     const [perPage, setPerPage] = useState('20')
     const [projects, setProjects] = useState<Project[]>([])
     const [filter, setFilter] = useState<Filter>({ name: '', tags: [] })
-    const size = rem('280px');
     const [{ data, loading, error }] = useAxios(
         `${settings.localBackend}/projects?page=${page - 1}&size=${perPage}${filter.name ? '&name=' + filter.name : ''}${filter.tags.length > 0 ? '&tags=' + filter.tags?.join(",") : ''}&_=${reload.current}`
     );
@@ -32,29 +33,52 @@ export function ProjectsList() {
     if (error) return <p>Error!</p>;
 
     return (
-        <Container fluid my='xs'>
-            <Group mb="md" >
+        <div className="container mx-auto my-2 w-full">
+            <div className="mb-4 flex items-center gap-2">
                 <ProjectFilter value={filter} onChange={(filter) => { setFilter(filter); setSearchParams({ ...searchParams, filter: JSON.stringify(filter) }); }} />
-                <Select ml="auto" placeholder="Pick value" data={['10', '20', '50', '100']} value={perPage} onChange={(v) => { if (v) { setPage(1); setPerPage(v) } }} />
-                <Pagination total={data?.total_pages} value={data?.page + 1}
-                    onChange={setPage}
-                    onNextPage={() => { setPage(page + 1) }}
-                    onPreviousPage={() => { setPage(page - 1) }} />
-            </Group>
-            <Flex
-                gap="md"
-                justify="center"
-                align="flex-start"
-                direction="row"
-                wrap="wrap"
-            >
+                <Select value={perPage} onValueChange={(v) => { if (v) { setPage(1); setPerPage(v) } }}>
+                    <SelectTrigger className="ml-auto w-[120px]">
+                        <SelectValue placeholder="Pick value" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious 
+                                onClick={() => setPage(Math.max(1, page - 1))}
+                                className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLink onClick={() => setPage(page)}>
+                                {data?.page ? data.page + 1 : page}
+                            </PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationNext 
+                                onClick={() => setPage(Math.min((data?.total_pages || 1), page + 1))}
+                                className={page >= (data?.total_pages || 1) ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            </div>
+            <div className="flex flex-wrap items-start justify-center gap-4">
                 {loading && Array.from(Array(3))
-                    .map((_, i) => <Skeleton
-                        style={{ height: size, minHeight: size, minWidth: size, width: size }}
-                        key={i}
-                        visible={true} />)}
+                    .map((_, i) => (
+                        <Skeleton
+                            key={i}
+                            className="h-[280px] min-h-[280px] min-w-[280px] w-[280px]"
+                        />
+                    ))}
                 {!loading && projects.map((i) => <ProjectCard key={i.uuid} project={i} />)}
-            </Flex>
-        </Container>
+            </div>
+        </div>
     );
 }

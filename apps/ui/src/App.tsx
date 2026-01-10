@@ -1,7 +1,5 @@
-import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { AppShell, Burger, Group, LoadingOverlay } from '@mantine/core';
-import { NavBar } from "./core/navbar/NavBar.tsx";
-import { Outlet } from "react-router-dom";
+import { AppSidebar } from "./components/app-sidebar";
+import { Outlet, useLocation, Link } from "react-router-dom";
 import { AxiosErrorHandler } from './core/axios-error-handler/AxiosErrorHandler.tsx';
 import { ScrollToTop } from './core/scroll-to-top/ScrollToTop.tsx';
 import { DashboardProvider } from './dashboard/provider/DashboardProvider.tsx';
@@ -10,45 +8,111 @@ import { SSEProvider } from './core/sse/SSEProvider.tsx';
 import { SettingsProvider } from './core/settings/settingsProvider.tsx';
 import { DiscoveryNotifications } from './system/components/discovery-notifications/DiscoveryNotifications.tsx';
 import { NewProjectNotification } from './projects/notifications/new-project-notification/NewProjectNotification.tsx';
-import { Notifications } from '@mantine/notifications';
 import { NewTempfileNotification } from './tempfiles/notifications/new-tempfile-notification/NewTempfileNotification.tsx';
+import { Skeleton } from './components/ui/skeleton';
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
-export default function App() {
-    const [opened, { toggle }] = useDisclosure();
-    const matches = useMediaQuery('(min-width: 900px)');
+function Breadcrumbs() {
+    const location = useLocation();
+    const pathnames = location.pathname.split('/').filter((x) => x);
+    
+    const breadcrumbMap: Record<string, string> = {
+        'projects': 'Projects',
+        'tempfiles': 'Temp Files',
+        'printers': 'Printers',
+        'settings': 'Settings',
+        'new': 'New',
+        'import': 'Import',
+        'list': 'List',
+    };
 
     return (
+        <Breadcrumb>
+            <BreadcrumbList>
+                {pathnames.length === 0 ? (
+                    <BreadcrumbItem>
+                        <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                    </BreadcrumbItem>
+                ) : (
+                    <>
+                        <BreadcrumbItem className="hidden md:block">
+                            <BreadcrumbLink asChild>
+                                <Link to="/">Dashboard</Link>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        {pathnames.map((name, index) => {
+                            const routeTo = `/${pathnames.slice(0, index + 1).join('/')}`;
+                            const isLast = index === pathnames.length - 1;
+                            const displayName = breadcrumbMap[name] || name;
+
+                            return (
+                                <div key={routeTo} className="flex items-center">
+                                    <BreadcrumbSeparator className="hidden md:block" />
+                                    <BreadcrumbItem>
+                                        {isLast ? (
+                                            <BreadcrumbPage>{displayName}</BreadcrumbPage>
+                                        ) : (
+                                            <BreadcrumbLink asChild>
+                                                <Link to={routeTo}>{displayName}</Link>
+                                            </BreadcrumbLink>
+                                        )}
+                                    </BreadcrumbItem>
+                                </div>
+                            );
+                        })}
+                    </>
+                )}
+            </BreadcrumbList>
+        </Breadcrumb>
+    );
+}
+
+export default function App() {
+    return (
         <SettingsProvider
-            loading={<LoadingOverlay visible={true} zIndex={1000} overlayProps={{ blur: 2 }} />}
+            loading={
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-background">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                </div>
+            }
         >
             <SSEProvider>
                 <DashboardProvider>
-                    <AppShell
-                        withBorder={true}
-                        header={{ height: 60, collapsed: matches }}
-                        //footer={{height: 60}}
-                        navbar={{ width: 80, breakpoint: 'sm', collapsed: { mobile: !opened } }}
-                        aside={{ width: 300, breakpoint: 'md', collapsed: { desktop: true, mobile: true } }}
-                        padding="md"
-                    >
-                        <AppShell.Header>
-                            <Group h="100%" px="md">
-                                <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-                            </Group>
-                        </AppShell.Header>
-                        <NavBar />
-                        <AppShell.Main>
-                            <Outlet />
-                        </AppShell.Main>
-                        <AppShell.Aside p="md">Aside</AppShell.Aside>
-                    </AppShell>
+                    <SidebarProvider>
+                        <AppSidebar />
+                        <SidebarInset>
+                            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                                <SidebarTrigger className="-ml-1" />
+                                <Separator
+                                    orientation="vertical"
+                                    className="mr-2 data-[orientation=vertical]:h-4"
+                                />
+                                <Breadcrumbs />
+                            </header>
+                            <div className="flex flex-1 flex-col gap-4 p-4">
+                                <Outlet />
+                            </div>
+                        </SidebarInset>
+                    </SidebarProvider>
                     <ScrollToTop />
                     <AxiosErrorHandler />
                     <NewProjectNotification />
                     <DiscoveryNotifications />
                     <NewTempfileNotification />
                     <PrinterWidgetProvider />
-                    <Notifications limit={10} />
                 </DashboardProvider>
             </SSEProvider>
         </SettingsProvider>

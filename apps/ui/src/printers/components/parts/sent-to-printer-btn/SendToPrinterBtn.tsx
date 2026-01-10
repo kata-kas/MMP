@@ -1,10 +1,11 @@
 import { SettingsContext } from "@/core/settings/settingsContext";
 import { IconPrinter } from "@tabler/icons-react";
 import { Printer } from "@/printers/entities/Printer";
-import { ActionIcon, Menu, rem } from "@mantine/core";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useContext, useEffect, useState } from "react";
-import { notifications } from "@mantine/notifications";
 
 type SentToPrinterBtnProps = {
     id: string
@@ -25,10 +26,8 @@ export function SendToPrinterBtn({ id }: SentToPrinterBtnProps) {
             url: `${settings.localBackend}/printers/${p.uuid}/send/${id}`
         })
             .then(() => {
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'File sent to printer!',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'File sent to printer!',
                 })
             })
             .catch((e) => {
@@ -36,19 +35,20 @@ export function SendToPrinterBtn({ id }: SentToPrinterBtnProps) {
             });
     }
 
-    return (<Menu
-        transitionProps={{ transition: 'pop' }}
-        withArrow
-        position="bottom-end"
-        withinPortal
-    >
-        <Menu.Target>
-            <ActionIcon variant="subtle" color="gray" loading={loading || sLoading}>
-                <IconPrinter style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-            </ActionIcon>
-        </Menu.Target>
-        <Menu.Dropdown>
-            {printers.map((p, i) => <Menu.Item key={i} onClick={() => sentToPrinter(p)}>{p.name}</Menu.Item>)}
-        </Menu.Dropdown>
-    </Menu>)
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={loading || sLoading}>
+                    <IconPrinter className="h-4 w-4" stroke={1.5} />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                {printers.map((p, i) => (
+                    <DropdownMenuItem key={i} onClick={() => sentToPrinter(p)}>
+                        {p.name}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
 }

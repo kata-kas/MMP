@@ -1,17 +1,22 @@
-import { ActionIcon, Affix, Transition, rem } from "@mantine/core";
-import { useWindowScroll } from "@mantine/hooks";
-import { IconArrowUp } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { useWindowScroll } from "react-use";
+import { ArrowUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ScrollToTop() {
-    const [scroll, scrollTo] = useWindowScroll();
-    return (<Affix position={{ bottom: 20, right: 20 }}>
-        <Transition transition="slide-up" mounted={scroll.y > 0}>
-            {(transitionStyles) => (
-                <ActionIcon style={transitionStyles}
-                    onClick={() => scrollTo({ y: 0 })}>
-                    <IconArrowUp style={{ width: rem(16), height: rem(16) }} />
-                </ActionIcon>
-            )}
-        </Transition>
-    </Affix >)
+    const { y } = useWindowScroll();
+    return (
+        <div className="fixed bottom-5 right-5 z-50">
+            <Button
+                size="icon"
+                className={cn(
+                    "transition-all duration-300",
+                    y > 0 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+                )}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+                <ArrowUp className="h-4 w-4" />
+            </Button>
+        </div>
+    )
 }

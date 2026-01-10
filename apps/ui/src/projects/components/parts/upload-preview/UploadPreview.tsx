@@ -1,5 +1,9 @@
-import { ActionIcon, AspectRatio, Box, Card, Checkbox, Group, Image, SimpleGrid, Stack, Text, rem } from "@mantine/core";
+import { Card } from "@/components/ui/card";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FileIcon, Image as ImageIcon } from "lucide-react";
 import { IconFile } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
 
 type UploadPreviewProps = {
     selected: string
@@ -11,40 +15,43 @@ function ImgView({ file }: { file: File }) {
     if (!file.type.startsWith("image/")) return null;
     const src = URL.createObjectURL(file)
     return (
-        <AspectRatio ratio={1} style={{ flex: `0 0 ${rem(100)}` }}>
-            <Image src={src} />
+        <AspectRatio ratio={1} className="flex-shrink-0 w-[100px]">
+            <img src={src} alt={file.name} className="h-full w-full object-cover rounded-l-md" />
         </AspectRatio>
     )
 }
 
 export function UploadPreview({ files, selected, onChange }: UploadPreviewProps) {
-
     const isImage = (f: File) => f.type.startsWith("image/");
 
-
     return (
-        <>
-            <SimpleGrid cols={3} mt='sm'>
-                {files.sort((f1) => (isImage(f1) ? -1 : 0)).map((f, i) => <Card p={0} mx={0} withBorder radius="md" key={i}>
-                    <Group wrap="nowrap" gap={0}>
-                        {isImage(f) ?
-                            <ImgView file={f} /> :
-                            <AspectRatio ratio={1} style={{ flex: `0 0 ${rem(100)}` }}>
-                                <IconFile />
-                            </AspectRatio>}
-                        <Box w={isImage(f) ? 120 : 180} pl='sm'>
-                            <Text size='sm' truncate="end">
+        <div className="mt-4 grid grid-cols-3 gap-4">
+            {files.sort((f1) => (isImage(f1) ? -1 : 0)).map((f, i) => (
+                <Card key={i} className="p-0 overflow-hidden">
+                    <div className="flex items-center gap-0">
+                        {isImage(f) ? (
+                            <ImgView file={f} />
+                        ) : (
+                            <AspectRatio ratio={1} className="flex-shrink-0 w-[100px] flex items-center justify-center bg-muted">
+                                <IconFile className="h-8 w-8 text-muted-foreground" />
+                            </AspectRatio>
+                        )}
+                        <div className={cn("px-3 py-2 flex-1", isImage(f) ? "w-[120px]" : "w-[180px]")}>
+                            <p className="text-sm truncate">
                                 {f.name}
-                            </Text>
-                        </Box>
-                        {isImage(f) && <Stack p='sm' ml="auto" >
-                            <ActionIcon variant="subtle" color="gray" >
-                                <Checkbox size="xl" checked={selected == f.name} onChange={() => onChange(f.name)} />
-                            </ActionIcon>
-                        </Stack>}
-                    </Group>
-                </Card>)}
-            </SimpleGrid>
-        </>
+                            </p>
+                        </div>
+                        {isImage(f) && (
+                            <div className="p-3 ml-auto">
+                                <Checkbox
+                                    checked={selected === f.name}
+                                    onCheckedChange={() => onChange(f.name)}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </Card>
+            ))}
+        </div>
     )
 }

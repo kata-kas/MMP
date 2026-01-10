@@ -1,9 +1,12 @@
-import { ActionIcon, Badge, LoadingOverlay, Overlay, Text, Title, TypographyStylesProvider, rem, useMantineTheme } from '@mantine/core';
-import classes from './Header.module.css';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ExternalLink, Image as ImageIcon } from "lucide-react";
+import { IconExternalLink } from '@tabler/icons-react';
 import { stringToNumber } from "@/core/utils/color.ts";
 import { Tag } from '@/projects/entities/Project';
 import DOMPurify from 'dompurify'
-import { IconExternalLink, IconPhoto } from '@tabler/icons-react';
+import { cn } from "@/lib/utils";
 
 type HeaderProps = {
     loading?: boolean
@@ -15,43 +18,99 @@ type HeaderProps = {
     onTagClick?: (tag: Tag) => void
 }
 
+const getBadgeColor = (tagValue: string, index: number) => {
+    const colors = [
+        "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+        "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
+        "bg-blue-300 text-blue-900 dark:bg-blue-700 dark:text-blue-100",
+        "bg-blue-400 text-blue-950 dark:bg-blue-600 dark:text-blue-50",
+        "bg-blue-500 text-white dark:bg-blue-500 dark:text-white",
+        "bg-blue-600 text-white dark:bg-blue-400 dark:text-blue-950",
+        "bg-blue-700 text-white dark:bg-blue-300 dark:text-blue-950",
+        "bg-blue-800 text-white dark:bg-blue-200 dark:text-blue-950",
+        "bg-blue-900 text-white dark:bg-blue-100 dark:text-blue-950",
+        "bg-blue-950 text-white dark:bg-blue-50 dark:text-blue-950",
+    ];
+    return colors[stringToNumber(tagValue, 10) % colors.length];
+}
+
 export function Header({ title, description, loading, imagePath, link, tags, onTagClick }: HeaderProps) {
-    const theme = useMantineTheme();
     const fallbackImage = 'https://images.unsplash.com/photo-1563520239648-a24e51d4b570?q=80&w=2000&h=400&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
     const img = imagePath ?? fallbackImage;
+    
     const tagWrap = tags?.map((tag, i) =>
         i < 10 ?
-            <Badge onClick={() => onTagClick && onTagClick(tag)} style={{ cursor: onTagClick ? "pointer" : "" }} color={theme.colors.blue[stringToNumber(tag.value, 10)]} key={i} size="xl" mx={2}>{tag.value}</Badge> : null)
+            <Badge
+                key={i}
+                onClick={() => onTagClick && onTagClick(tag)}
+                className={cn(
+                    "mx-2 cursor-pointer text-lg",
+                    getBadgeColor(tag.value, i)
+                )}
+            >
+                {tag.value}
+            </Badge> : null
+    )
+    
     if (tagWrap && tags && tags.length > 10) {
-        tagWrap.push(<Badge color={theme.colors.blue[stringToNumber(`${tags.length - 10}`, 10)]} key={10} size="xl"
-            mx={2}>+{tags.length - 10}</Badge>)
+        tagWrap.push(
+            <Badge
+                key={10}
+                className={cn(
+                    "mx-2 text-lg",
+                    getBadgeColor(`${tags.length - 10}`, 10)
+                )}
+            >
+                +{tags.length - 10}
+            </Badge>
+        )
     }
+    
     return (
         <div
-            className={classes.wrapper}
+            className="relative flex min-h-[400px] items-center justify-center bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${loading ? fallbackImage : img})` }}
         >
-            <Overlay color="#000" opacity={0.65} zIndex={1} />
+            <div className="absolute inset-0 bg-black/65 z-[1]" />
 
-            <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ blur: 2 }} />
-            <div className={classes.inner}>
-                <Title className={classes.title}>
-                    {title}
-                </Title>
-
-                <Text size="lg" className={classes.description} lineClamp={3} component="div">
-                    <TypographyStylesProvider>
-                        <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description, { sanitize: true }) }} />
-                    </TypographyStylesProvider>
-                </Text>
-
-                <div className={classes.tags}>
-                    {tagWrap}
+            {loading && (
+                <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                    <Skeleton className="h-12 w-12 rounded-full" />
                 </div>
+            )}
+            
+            <div className="relative z-10 mx-auto max-w-4xl px-8 py-16 text-center">
+                <h1 className="mb-4 text-4xl font-bold text-white md:text-5xl">
+                    {title}
+                </h1>
 
-                {link && <ActionIcon className={classes.link} color='white' variant="subtle" size="lg" aria-label="Link" component="a" href={link} target='_blank'>
-                    <IconExternalLink style={{ width: rem(20) }} stroke={1.5} />
-                </ActionIcon>}
+                {description && (
+                    <div className="mb-6 text-lg text-white/90 line-clamp-3">
+                        <div
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description, { sanitize: true }) }}
+                        />
+                    </div>
+                )}
+
+                {tags && tags.length > 0 && (
+                    <div className="mb-4 flex flex-wrap items-center justify-center">
+                        {tagWrap}
+                    </div>
+                )}
+
+                {link && (
+                    <Button
+                        variant="ghost"
+                        size="lg"
+                        className="text-white hover:bg-white/20"
+                        asChild
+                    >
+                        <a href={link} target="_blank" rel="noopener noreferrer" aria-label="Link">
+                            <IconExternalLink className="mr-2 h-5 w-5" stroke={1.5} />
+                            Open Link
+                        </a>
+                    </Button>
+                )}
             </div>
         </div>
     );

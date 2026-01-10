@@ -2,8 +2,8 @@ import React, { useContext, useState } from "react";
 
 import { Widget as WidgetModel } from "@/dashboard/entities/WidgetType";
 import { dashboardContext } from "@/dashboard/provider/DashboardContext";
-import { ActionIcon, Flex, Group, Overlay, Stack, Text } from "@mantine/core";
-import classes from "./Widget.module.css";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { IconTrash } from "@tabler/icons-react";
 
 export interface WidgetProps {
@@ -18,18 +18,23 @@ export function Widget({ model, edit, onDelete }: WidgetProps) {
     const [config, setConfig] = useState(model.config)
     const w = React.cloneElement(widgetType.element, { config, onChange: () => { } })
     const c = React.cloneElement(widgetType?.configElement, { config, onChange: setConfig })
-    return (<Flex style={{ position: 'absolute', bottom: 0, top: 0, width: "100%" }} className={classes.wrapper}>
-        {edit && <Overlay color="#000" backgroundOpacity={0.85} p='sm'>
-            <Stack>
-                <Group justify="space-between">
-                    <Text>{widgetType?.name}</Text>
-                    <ActionIcon onClick={onDelete}>
-                        <IconTrash />
-                    </ActionIcon>
-                </Group>
-                {c}
-            </Stack>
-        </Overlay>}
-        {w}
-    </Flex>)
+    
+    return (
+        <div className="absolute inset-0 flex w-full">
+            {edit && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/85 p-3">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-white">{widgetType?.name}</p>
+                            <Button variant="ghost" size="icon" onClick={onDelete} className="text-white hover:bg-white/20">
+                                <IconTrash className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        {c}
+                    </div>
+                </div>
+            )}
+            {w}
+        </div>
+    )
 }

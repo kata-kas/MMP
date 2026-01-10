@@ -1,13 +1,19 @@
-import { Button, Group, rem, TagsInput, Text, Textarea, TextInput } from "@mantine/core";
-import { useForm } from "@mantine/form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { TagsInput } from "@/components/ui/tags-input";
+import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
 import { Project } from "../../../entities/Project.ts";
 import useAxios from "axios-hooks";
 import { useContext, useState } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext.ts";
-import { notifications } from '@mantine/notifications';
-import { Dropzone } from "@mantine/dropzone";
-import { IconPhoto, IconUpload, IconX } from "@tabler/icons-react";
+import { toast } from "sonner";
+import { useDropzone } from "@/components/ui/dropzone";
 import { UploadPreview } from "../upload-preview/UploadPreview.tsx";
+import { cn } from "@/lib/utils";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
+
 type ProjectFormProps = {
     project: Project;
     onProjectChange: (p: Project) => void;
@@ -23,35 +29,38 @@ export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFor
         },
         { manual: true }
     )
-    const form = useForm({
-        initialValues: {
-            tags: [],
+    
+    const form = useForm<Project & { tags: string[] }>({
+        defaultValues: {
+            tags: project.tags?.map(t => t.value) || [],
             ...project,
         },
-        validate: {
-            name: (value) => (value.length < 2 ? 'Too short name' : null),
+    });
+
+    const dropzone = useDropzone({
+        onDrop: (acceptedFiles) => {
+            setFiles(prev => [...prev, ...acceptedFiles]);
         },
     });
-    const onDrop = (files: File[]) => {
-        console.log(files);
-        setFiles(files)
-    };
-    const onSave = (project: Project) => {
-        const formData = new FormData();
-        formData.append("payload", JSON.stringify(project))
+
+    const onSave = (formData: Project & { tags: string[] }) => {
+        const formDataToSend = new FormData();
+        const projectData = {
+            ...formData,
+            tags: formData.tags.map(t => ({ value: t }))
+        };
+        formDataToSend.append("payload", JSON.stringify(projectData))
         if (files.length > 0) {
-            files.forEach((file) => formData.append("files", file));
+            files.forEach((file) => formDataToSend.append("files", file));
         }
         executeSave({
             url: `${settings.localBackend}/projects${project.uuid ? "/" + project.uuid : ''}`,
-            data: formData
+            data: formDataToSend
         })
             .then(({ data }) => {
                 onProjectChange(data)
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'Project updated',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'Project updated',
                 })
             })
             .catch((e) => {
@@ -60,69 +69,84 @@ export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFor
     };
 
     return (
-        <form onSubmit={form.onSubmit(onSave)}>
-            <TextInput
-                mb="sm"
-                label="Name"
-                {...form.getInputProps('name')}
-            />
-            <Textarea
-                mb="sm"
-                label="Desciption"
-                {...form.getInputProps('description')}
-            />
-            <TextInput
-                mb="sm"
-                label="External Link"
-                {...form.getInputProps('external_link')}
-            />
+        <form onSubmit={form.handleSubmit(onSave)} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                    id="name"
+                    {...form.register("name", { required: "Name is required", minLength: { value: 2, message: "Too short name" } })}
+                />
+                {form.formState.errors.name && (
+                    <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                )}
+            </div>
+            
+            <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                    id="description"
+                    {...form.register("description")}
+                />
+            </div>
+            
+            <div className="space-y-2">
+                <Label htmlFor="external_link">External Link</Label>
+                <Input
+                    id="external_link"
+                    {...form.register("external_link")}
+                />
+            </div>
+            
             <TagsInput
-                mb="sm"
                 label="Tags"
                 maxDropdownHeight={200}
-                {...form.getInputProps('tags')}
-                value={form.values.tags.map(t => t.value)}
-                onChange={(v) => form.setFieldValue('tags', v.map((s) => ({ value: s })))}
+                value={form.watch("tags") || []}
+                onChange={(v) => form.setValue("tags", v)}
                 splitChars={[',', ' ', '|']}
                 clearable
             />
-            {withUpload && <>
-                <Dropzone onDrop={onDrop} mih={100}>
-                    <Group justify="center" gap="xl" mih={100} style={{ pointerEvents: 'none' }}>
-                        <Dropzone.Accept>
-                            <IconUpload
-                                style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
-                                stroke={1.5}
-                            />
-                        </Dropzone.Accept>
-                        <Dropzone.Reject>
-                            <IconX
-                                style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
-                                stroke={1.5}
-                            />
-                        </Dropzone.Reject>
-                        <Dropzone.Idle>
-                            <IconPhoto
-                                style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
-                                stroke={1.5}
-                            />
-                        </Dropzone.Idle>
-
-                        <div>
-                            <Text size="xl" inline>
-                                Drag assets here or click to select files
-                            </Text>
-                            <Text size="sm" c="dimmed" inline mt={7}>
-                                Attach as many files as you like
-                            </Text>
+            
+            {withUpload && (
+                <>
+                    <div
+                        {...dropzone.getRootProps()}
+                        className={cn(
+                            "flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors",
+                            dropzone.isDragActive && "border-primary bg-primary/5"
+                        )}
+                    >
+                        <input {...dropzone.getInputProps()} />
+                        <div className="flex flex-col items-center gap-4">
+                            {dropzone.isDragActive ? (
+                                <Upload className="h-12 w-12 text-primary" />
+                            ) : dropzone.isDragReject ? (
+                                <X className="h-12 w-12 text-destructive" />
+                            ) : (
+                                <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                            )}
+                            <div className="text-center">
+                                <p className="text-lg font-medium">
+                                    Drag assets here or click to select files
+                                </p>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Attach as many files as you like
+                                </p>
+                            </div>
                         </div>
-                    </Group>
-                </Dropzone>
-                <UploadPreview files={files} selected={form.values.default_image_name} onChange={(name) => { console.log(name); form.setFieldValue('default_image_name', name) }} />
-            </>}
-            <Group justify="flex-end" mt="md">
-                <Button type="submit" loading={loading}>Submit</Button>
-            </Group>
+                    </div>
+                    <UploadPreview 
+                        files={files} 
+                        selected={form.watch("default_image_name")} 
+                        onChange={(name) => form.setValue("default_image_name", name)} 
+                    />
+                </>
+            )}
+            
+            <div className="flex justify-end">
+                <Button type="submit" disabled={loading}>
+                    {loading ? "Submitting..." : "Submit"}
+                </Button>
+            </div>
         </form>
     );
 }

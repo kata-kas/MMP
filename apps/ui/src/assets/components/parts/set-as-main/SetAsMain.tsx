@@ -1,7 +1,7 @@
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { Menu, rem } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
-import { IconHeart } from "@tabler/icons-react";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { Heart } from "lucide-react";
 import useAxios from "axios-hooks";
 import { useCallback, useContext } from "react";
 
@@ -21,7 +21,6 @@ export function SetAsMain({ projectUuid, assetId, onChange }: SetAsMainProps) {
         { manual: true }
     );
     const setMainImage = useCallback(() => {
-
         callSetMainImage({
             data: {
                 uuid: projectUuid,
@@ -30,21 +29,22 @@ export function SetAsMain({ projectUuid, assetId, onChange }: SetAsMainProps) {
         })
             .then(({ data }) => {
                 console.log(data);
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'Project main image updated!',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'Project main image updated!',
                 })
                 onChange()
             })
             .catch((e) => {
                 console.log(e)
             });
-    }, [projectUuid]);
+    }, [projectUuid, assetId, callSetMainImage, onChange]);
 
     if (!assetId) return null;
 
-    return (<Menu.Item onClick={setMainImage} leftSection={<IconHeart style={{ width: rem(14), height: rem(14) }} />}>
-        Set as main image
-    </Menu.Item>)
+    return (
+        <DropdownMenuItem onClick={setMainImage}>
+            <Heart className="mr-2 h-3.5 w-3.5" />
+            Set as main image
+        </DropdownMenuItem>
+    )
 }

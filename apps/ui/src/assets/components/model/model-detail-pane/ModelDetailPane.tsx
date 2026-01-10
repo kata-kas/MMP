@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 import { Canvas, useLoader, useThree } from '@react-three/fiber'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import { Suspense, useContext, useLayoutEffect, useRef, useState } from "react";
+import { Suspense, useContext, useLayoutEffect, useRef, useEffect, useState } from "react";
 import { Asset } from "../../../entities/Assets.ts";
 import { Center, GizmoHelper, GizmoViewport, Grid, Html, OrbitControls, useProgress } from '@react-three/drei'
-import { useElementSize } from "@mantine/hooks";
-import { Alert, lighten } from "@mantine/core";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SettingsContext } from '@/core/settings/settingsContext.ts';
-
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type ModelProps = {
     color: string,
@@ -22,8 +22,6 @@ function Model({ color, model, projectUuid }: ModelProps) {
 
     const [active, setActive] = useState(false)
 
-    // Subscribe this component to the render-loop, rotate the mesh every frame
-    //useFrame((state, delta) => (meshRef.current.rotation.z += delta))
     return (
         <>
             <mesh
@@ -36,10 +34,8 @@ function Model({ color, model, projectUuid }: ModelProps) {
                 <meshStandardMaterial color={color} />
             </mesh>
         </>
-
     )
 }
-
 
 type SceneProps = {
     models: Asset[],
@@ -72,14 +68,12 @@ function Scene({ models, projectUuid }: SceneProps) {
 }
 
 function MoveCamera({ children, models }: { children: JSX.Element[], models: Asset[] }) {
-    const group = useRef<THREE.Group>()
+    const group = useRef<THREE.Group>(null)
     const { camera } = useThree()
     useLayoutEffect(() => {
         if (!group.current) return;
         const box = new THREE.Box3();
         box.setFromObject(group.current);
-
-
 
         const size = new THREE.Vector3();
         box.getSize(size);
@@ -89,7 +83,6 @@ function MoveCamera({ children, models }: { children: JSX.Element[], models: Ass
         let dy = size.z / 2 + Math.abs(size.y / 2 / Math.tan(fov / 2));
         let cameraZ = Math.max(dx, dy);
 
-        // offset the camera, if desired (to avoid filling the whole canvas)
         cameraZ *= 1.25;
 
         camera.position.set(0, 0, cameraZ);
@@ -98,10 +91,8 @@ function MoveCamera({ children, models }: { children: JSX.Element[], models: Ass
         const newY = camera.position.y - (size.y / 2);
         group.current.position.set(newX, newY, group.current.position.z)
 
-        // set the far plane of the camera so that it easily encompasses the whole object
         const minZ = box.min.z;
         const cameraToFarEdge = (minZ < 0) ? -minZ + cameraZ : cameraZ - minZ;
-
 
         const box3Helper = new THREE.Box3Helper(box, 0x00ff00);
         box3Helper.material.linewidth = 3;
@@ -121,7 +112,7 @@ function MoveCamera({ children, models }: { children: JSX.Element[], models: Ass
                 group.current.remove(axesHelper);
             }
         }
-    }, [models]);
+    }, [models, camera]);
     return (
         <group ref={group}>
             {children}
@@ -142,16 +133,49 @@ type ModelDetailPaneProps = {
 
 export function ModelDetailPane({ models, projectUuid, onClose }: ModelDetailPaneProps) {
     console.log(models);
-    const { ref, width } = useElementSize();
+    const ref = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(800);
+    
+    useEffect(() => {
+        if (!ref.current) return;
+        
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setWidth(entry.contentRect.width);
+            }
+        });
+        
+        resizeObserver.observe(ref.current);
+        
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, []);
+    
+    const height = width * (9 / 16);
+    
     return (
-        <Alert variant="filled" color="gray" withCloseButton onClose={onClose} title={' '} ref={ref} style={{ height: width * (9 / 16) }}>
-            <Canvas shadows raycaster={{ params: { Line: { threshold: 0.15 } } }}
-                camera={{ position: [0, 0, 0], fov: 20 }}
-                style={{ height: (width * (9 / 16)) - 20 }}
-            >
-                <Scene models={models} projectUuid={projectUuid} />
-            </Canvas>
-        </Alert>
+        <div ref={ref} className="w-full">
+            <Alert className="relative" style={{ height }}>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 z-10"
+                    onClick={onClose}
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+                <AlertTitle className="sr-only">3D Model</AlertTitle>
+                <AlertDescription className="p-0">
+                    <Canvas shadows raycaster={{ params: { Line: { threshold: 0.15 } } }}
+                        camera={{ position: [0, 0, 0], fov: 20 }}
+                        style={{ height: height - 20 }}
+                    >
+                        <Scene models={models} projectUuid={projectUuid} />
+                    </Canvas>
+                </AlertDescription>
+            </Alert>
+        </div>
     );
 }
 

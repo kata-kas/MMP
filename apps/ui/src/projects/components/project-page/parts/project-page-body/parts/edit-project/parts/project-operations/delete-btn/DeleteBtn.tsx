@@ -1,7 +1,7 @@
 import { ConfirmDialog } from "@/core/dialogs/confirm-dialog/ConfirmDialog";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { Button } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import useAxios from "axios-hooks";
 import { useCallback, useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,21 +25,20 @@ export function DeleteBtn({ projectUuid }: DeleteBtnProps) {
         doDelete()
             .then(({ data }) => {
                 console.log(data);
-                notifications.show({
-                    title: 'Great Success!',
-                    message: 'Project deleted',
-                    color: 'indigo',
+                toast.success('Great Success!', {
+                    description: 'Project deleted',
                 })
-
                 navigate(`/projects?tab=list`)
             })
             .catch((e) => {
                 console.log(e)
             });
-    }, [doDelete])
+    }, [doDelete, navigate])
 
     return (<>
-        <Button color="red" onClick={() => setIsOpen(true)} loading={loading}>Delete Project</Button>
+        <Button variant="destructive" onClick={() => setIsOpen(true)} disabled={loading}>
+            {loading ? "Deleting..." : "Delete Project"}
+        </Button>
         <ConfirmDialog opened={isOpen} onOk={onOk} onCancel={() => setIsOpen(false)} />
     </>
     )

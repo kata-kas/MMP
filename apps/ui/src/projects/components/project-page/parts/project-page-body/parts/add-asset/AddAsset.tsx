@@ -1,11 +1,10 @@
-import { Dropzone } from "@mantine/dropzone";
-import { Container, Group, rem, Text } from "@mantine/core";
-import { IconPhoto, IconUpload, IconX } from "@tabler/icons-react";
+import { useDropzone } from "@/components/ui/dropzone";
+import { toast } from "sonner";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
 import useAxios from "axios-hooks";
 import { useContext } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { notifications } from "@mantine/notifications";
-
+import { cn } from "@/lib/utils";
 
 type AddAssetProps = {
     projectUuid: string
@@ -23,61 +22,56 @@ export function AddAsset({ projectUuid }: AddAssetProps) {
             autoCancel: false
         }
     )
-    const onDrop = (files: File[]) => {
-        console.log(files);
-        for (const i in files) {
-            const formData = new FormData();
-            formData.append("project_uuid", projectUuid);
-            formData.append("files", files[i]);
-            executeSave({ data: formData })
-                .then(({ data }) => {
-                    console.log(data);
-                    notifications.show({
-                        title: 'Great Success!',
-                        message: `${data.name} as added to your project!`,
-                        color: 'indigo',
+    
+    const dropzone = useDropzone({
+        onDrop: (acceptedFiles) => {
+            for (const file of acceptedFiles) {
+                const formData = new FormData();
+                formData.append("project_uuid", projectUuid);
+                formData.append("files", file);
+                executeSave({ data: formData })
+                    .then(({ data }) => {
+                        console.log(data);
+                        toast.success('Great Success!', {
+                            description: `${data.name} as added to your project!`,
+                        })
                     })
-                })
-                .catch((e) => {
-                    console.log(e)
-                });
-        }
-    };
+                    .catch((e) => {
+                        console.log(e)
+                    });
+            }
+        },
+    });
+    
     return (
-        <>
-            <Container>
-                <Dropzone onDrop={onDrop} mih={220} loading={loading}>
-                    <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
-                        <Dropzone.Accept>
-                            <IconUpload
-                                style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
-                                stroke={1.5}
-                            />
-                        </Dropzone.Accept>
-                        <Dropzone.Reject>
-                            <IconX
-                                style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
-                                stroke={1.5}
-                            />
-                        </Dropzone.Reject>
-                        <Dropzone.Idle>
-                            <IconPhoto
-                                style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
-                                stroke={1.5}
-                            />
-                        </Dropzone.Idle>
-
-                        <div>
-                            <Text size="xl" inline>
-                                Drag assets here or click to select files
-                            </Text>
-                            <Text size="sm" c="dimmed" inline mt={7}>
-                                Attach as many files as you like
-                            </Text>
-                        </div>
-                    </Group>
-                </Dropzone>
-            </Container>
-        </>
+        <div className="container mx-auto max-w-4xl">
+            <div
+                {...dropzone.getRootProps()}
+                className={cn(
+                    "flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors",
+                    dropzone.isDragActive && "border-primary bg-primary/5",
+                    loading && "opacity-50 pointer-events-none"
+                )}
+            >
+                <input {...dropzone.getInputProps()} />
+                <div className="flex flex-col items-center gap-4">
+                    {dropzone.isDragActive ? (
+                        <Upload className="h-12 w-12 text-primary" />
+                    ) : dropzone.isDragReject ? (
+                        <X className="h-12 w-12 text-destructive" />
+                    ) : (
+                        <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    )}
+                    <div className="text-center">
+                        <p className="text-xl font-medium">
+                            Drag assets here or click to select files
+                        </p>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Attach as many files as you like
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

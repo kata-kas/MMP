@@ -1,19 +1,13 @@
 import { useCallback } from "react";
 import { dashboardContext } from "./DashboardContext";
 import { Widget, WidgetType } from "../entities/WidgetType";
-import { useLocalStorage } from "@mantine/hooks";
+import { useLocalStorage } from "usehooks-ts";
 import { useMap } from "@/core/utils/useMap";
 import { Layout } from "react-grid-layout";
 
 export function DashboardProvider({ children }: any) {
-    const [widgets, setWidgets] = useLocalStorage<Widget[]>({
-        key: 'dashboard-widgets',
-        defaultValue: []
-    })
-    const [layout, setLayout] = useLocalStorage<any>({
-        key: 'dashboard-layout',
-        defaultValue: {}
-    })
+    const [widgets, setWidgets] = useLocalStorage<Widget[]>('dashboard-widgets', [])
+    const [layout, setLayout] = useLocalStorage<any>('dashboard-layout', {})
     const [widgetTypes, actions] = useMap<string, WidgetType>([])
 
     const addWidgetType = useCallback((widgetType: WidgetType) => {

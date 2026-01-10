@@ -1,6 +1,5 @@
 import SSEContext from "@/core/sse/SSEContext";
-import { Anchor } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import { useId, useContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -29,9 +28,12 @@ export function NewTempfileNotification() {
     useEffect(() => {
         console.log(message)
         if (!message.state) return;
-        notifications.show({
-            title: `New  temp file uploaded!`,
-            message: <>Go to <Anchor component={Link} to={`/tempfiles`}>{message.state.name}</Anchor></>,
+        toast.success(`New temp file uploaded!`, {
+            description: (
+                <span>
+                    Go to <Link to={`/tempfiles`} className="underline">{message.state.name}</Link>
+                </span>
+            ),
         })
     }, [message])
     return (<></>)

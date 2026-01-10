@@ -1,8 +1,11 @@
-import { Anchor, Button, Container, Group, Text, Textarea } from "@mantine/core";
-import { useForm } from "@mantine/form";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
 import useAxios from "axios-hooks";
 import { useContext } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
+import { cn } from "@/lib/utils";
 
 export function ImportProject() {
     const { settings } = useContext(SettingsContext);
@@ -10,16 +13,15 @@ export function ImportProject() {
         url: `${settings.localBackend}/downloader/fetch`,
         method: 'post',
     }, { manual: true })
+    
     const form = useForm({
-        initialValues: {
+        defaultValues: {
             urls: '',
         },
-        validate: {
-            urls: (value) => (value.length < 2 ? 'Too short name' : null),
-        },
     });
-    const onFetch = () => {
-        const urls = form.values.urls.split('\n');
+    
+    const onFetch = (data: { urls: string }) => {
+        const urls = data.urls.split('\n');
         fetchProject({
             data: {
                 url: urls.join(',')
@@ -28,23 +30,31 @@ export function ImportProject() {
             console.log(data);
         })
     }
+    
     return (
-        <>
-            <Container>
-                <h1>Import Project</h1>
-                <form onSubmit={form.onSubmit(onFetch)}>
+        <div className="container mx-auto max-w-4xl">
+            <h1 className="mb-4 text-2xl font-bold">Import Project</h1>
+            <form onSubmit={form.handleSubmit(onFetch)} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="urls">Thingiverse urls</Label>
                     <Textarea
+                        id="urls"
                         placeholder={'https://www.thingiverse.com/thing:2631794\nthing:4739346'}
-                        mb="sm"
-                        label="Thingiverse urls"
-                        {...form.getInputProps('urls')}
+                        {...form.register("urls", { required: true, minLength: 2 })}
                     />
-                    <Text>Check out <Anchor href="https://github.com/Maker-Management-Platform/mmp-companion">MMP Companion</Anchor> to import from more platforms.</Text>
-                    <Group justify="flex-end" mt="md">
-                        <Button type="submit" loading={loading}>Submit</Button>
-                    </Group>
-                </form>
-            </Container>
-        </>
+                    {form.formState.errors.urls && (
+                        <p className="text-sm text-destructive">Too short name</p>
+                    )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                    Check out <a href="https://github.com/Maker-Management-Platform/mmp-companion" className="text-primary underline">MMP Companion</a> to import from more platforms.
+                </p>
+                <div className="flex justify-end">
+                    <Button type="submit" disabled={loading}>
+                        {loading ? "Submitting..." : "Submit"}
+                    </Button>
+                </div>
+            </form>
+        </div>
     );
 }

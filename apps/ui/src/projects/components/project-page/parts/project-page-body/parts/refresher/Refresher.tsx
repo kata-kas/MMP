@@ -1,7 +1,6 @@
 import SSEContext from "@/core/sse/SSEContext";
-import { Anchor } from "@mantine/core";
-import { useId } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
+import { useId } from "react";
+import { toast } from "sonner";
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -35,11 +34,14 @@ export function Refresher({ projectUUID }: RefresherProps) {
         console.log(assetUpdate)
         if (!assetUpdate.state) return;
         if (projectUUID == assetUpdate.state.projectUUID) {
-            notifications.show({
-                title: `Assets have changed`,
-                message: <Anchor component={Link} reloadDocument to={`/projects/${projectUUID}`}>Refresh</Anchor>,
+            toast.info(`Assets have changed`, {
+                description: (
+                    <Link to={`/projects/${projectUUID}`} className="underline" reloadDocument>
+                        Refresh
+                    </Link>
+                ),
             })
         }
-    }, [assetUpdate])
+    }, [assetUpdate, projectUUID])
     return (<></>)
 }

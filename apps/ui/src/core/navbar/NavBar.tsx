@@ -1,13 +1,6 @@
-import cx from 'clsx';
-import {
-    Center,
-    Tooltip,
-    UnstyledButton,
-    Stack,
-    AppShell,
-    useMantineColorScheme,
-    useComputedColorScheme
-} from '@mantine/core';
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import {
     IconHome2,
     IconSun,
@@ -19,11 +12,11 @@ import { menuItems as projectMenuItems } from "@/projects/menu";
 import { menuItems as tempFileMenuItems } from "@/tempfiles/menu";
 import { menuItems as printersMenuItems } from "@/printers/menu";
 import { menuItems as settingsMenuItems } from "@/settings/menu";
-import classes from './NavBar.module.css';
 import { NavLink } from "react-router-dom";
 import { StatusIcon } from '../sse/components/status-icon/StatusIcon';
 import { useContext, useEffect, useState } from 'react';
 import { SettingsContext } from '../settings/settingsContext';
+import { useTheme } from "next-themes";
 
 interface NavbarLinkProps {
     icon: typeof IconHome2;
@@ -33,21 +26,33 @@ interface NavbarLinkProps {
 
 function NavbarLink({ icon: Icon, label, href }: NavbarLinkProps) {
     return (
-        <Tooltip label={label} position="right" transitionProps={{ duration: 0 }}>
-            <UnstyledButton
-                className={classes.link}
-                renderRoot={({ className, ...others }) => (
-                    <NavLink
-                        to={href}
-                        className={({ isActive }) =>
-                            cx(className, isActive && classes.active)
-                        }
-                        {...others}
-                    />
-                )}>
-                <Icon stroke={1.5} />
-            </UnstyledButton>
-        </Tooltip>
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-[50px] w-[50px] rounded-md text-white hover:bg-blue-700"
+                        asChild
+                    >
+                        <NavLink
+                            to={href}
+                            className={({ isActive }) =>
+                                cn(
+                                    "flex items-center justify-center",
+                                    isActive && "bg-white text-blue-600 shadow-sm hover:bg-white hover:text-blue-600"
+                                )
+                            }
+                        >
+                            <Icon stroke={1.5} />
+                        </NavLink>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                    <p>{label}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 }
 
@@ -62,9 +67,8 @@ const operationalItems = [
 ]
 
 export function NavBar() {
-    const { setColorScheme } = useMantineColorScheme();
+    const { theme, setTheme } = useTheme();
     const { settings } = useContext(SettingsContext);
-    const computedColorScheme = useComputedColorScheme('light', { getInitialValueInEffect: true });
     const [menuItems, setMenuItems] = useState(stdMenuItems)
 
     useEffect(() => {
@@ -75,14 +79,14 @@ export function NavBar() {
         }
     }, [settings.experimental])
 
-    const featureLinks = menuItems.map((link, index) => (
+    const featureLinks = menuItems.map((link) => (
         <NavbarLink
             {...link}
             key={link.label}
         />
     ));
 
-    const opsLinks = operationalItems.map((link, index) => (
+    const opsLinks = operationalItems.map((link) => (
         <NavbarLink
             {...link}
             key={link.label}
@@ -90,29 +94,39 @@ export function NavBar() {
     ));
 
     return (
-        <AppShell.Navbar className={classes.navbar}>
-            <Center>
-                <IconBrandMantine type="mark" size={30} />
-            </Center>
-
-            <div className={classes.navbarMain}>
-                <Stack justify="center" gap={0}>
-                    {featureLinks}
-                </Stack>
+        <nav className="flex h-full w-[80px] flex-col bg-blue-600 p-4">
+            <div className="flex items-center justify-center">
+                <IconBrandMantine type="mark" size={30} className="text-white" />
             </div>
 
-            <Stack justify="center" gap={0}>
+            <div className="mt-12 flex-1">
+                <div className="flex flex-col items-center justify-center gap-0">
+                    {featureLinks}
+                </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-0">
                 {opsLinks}
-                <Tooltip label={'Toggle color scheme'} position="right" transitionProps={{ duration: 0 }}>
-                    <UnstyledButton className={classes.link} onClick={() => setColorScheme(computedColorScheme === 'light' ? 'dark' : 'light')}>
-                        {computedColorScheme == 'dark' && <IconSun stroke={1.5} />}
-                        {computedColorScheme == 'light' && <IconMoon stroke={1.5} />}
-                    </UnstyledButton>
-                </Tooltip>
-                {settings.experimental.dashboard && <StatusIcon className={classes.link} />}
-                {/*<NavbarLink icon={IconSwitchHorizontal} href={'change'} label="Change account" />*/}
-                {/*<NavbarLink icon={IconLogout} href={'logout'} label="Logout" />*/}
-            </Stack>
-        </AppShell.Navbar>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-[50px] w-[50px] rounded-md text-white hover:bg-blue-700"
+                                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                            >
+                                {theme === 'dark' && <IconSun stroke={1.5} />}
+                                {theme === 'light' && <IconMoon stroke={1.5} />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p>Toggle color scheme</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                {settings.experimental.dashboard && <StatusIcon className="h-[50px] w-[50px] rounded-md text-white hover:bg-blue-700" />}
+            </div>
+        </nav>
     );
 }

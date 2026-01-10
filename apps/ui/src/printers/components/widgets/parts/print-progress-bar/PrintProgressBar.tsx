@@ -1,8 +1,8 @@
 import SSEContext from "@/core/sse/SSEContext";
 import { Job } from "@/printers/entities/Printer";
-import { Progress } from "@mantine/core";
+import { Progress } from "@/components/ui/progress";
 import { useContext, useEffect, useState } from "react";
-import { useId } from '@mantine/hooks';
+import { useId } from 'react';
 import { useCumulativeEvent } from "@/core/sse/useCumulativeEvent";
 
 interface PrintProgressBarProps {
@@ -31,6 +31,6 @@ export function PrintProgressBar({ printerUuid }: PrintProgressBarProps) {
         }
     }, [printerUuid, connected])
     return (
-        <Progress value={job.progress * 100} radius={0} size="xs" />
+        <Progress value={job.progress * 100} className="h-1" />
     )
 }

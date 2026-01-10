@@ -1,4 +1,4 @@
-import { useId } from "@mantine/hooks";
+import { useId } from "react";
 import { Temp } from "../temp/Temp";
 import RadiatorDisabledIcon from "mdi-react/RadiatorDisabledIcon";
 import SSEContext from "@/core/sse/SSEContext";
@@ -9,7 +9,6 @@ import { useContext, useEffect, useState } from "react";
 interface BedTempProps {
     printerUuid: string;
 }
-
 
 export function BedTemp({ printerUuid }: BedTempProps) {
     const subscriberId = useId();
@@ -31,7 +30,7 @@ export function BedTemp({ printerUuid }: BedTempProps) {
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [printerUuid, connected])
+    }, [printerUuid, connected, subscriberId, subscribe, unsubscribe, setBed])
     return (
         <Temp icon={<RadiatorDisabledIcon />} current={bed?.temperature ?? 0} target={bed?.target} />
     )

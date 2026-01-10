@@ -1,5 +1,6 @@
 import { Widget } from "@/dashboard/entities/WidgetType";
-import { Card, Group, Text } from "@mantine/core";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useContext, useEffect, useState } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
 import { Job, Printer, Thermal } from "@/printers/entities/Printer";
@@ -10,7 +11,7 @@ import { IconFile3d, IconPercentage, IconSkateboarding } from "@tabler/icons-rea
 import RadiatorDisabledIcon from "mdi-react/RadiatorDisabledIcon";
 import { SSEContext } from "@/core/sse/SSEContext";
 import { useCumulativeEvent } from "@/core/sse/useCumulativeEvent";
-import { useId } from '@mantine/hooks';
+import { useId } from 'react';
 
 export function PrinterTableWidget(w: Widget) {
     const { settings } = useContext(SettingsContext);
@@ -21,6 +22,7 @@ export function PrinterTableWidget(w: Widget) {
     const [extruder, setExtruder] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [heaterBed, setHeaterBed] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [job, setJob] = useCumulativeEvent<Job>({ progress: 0, fileName: "", message: "" });
+    
     useEffect(() => {
         if (!connected) return;
         setExtruder({ temperature: 0 });
@@ -47,52 +49,58 @@ export function PrinterTableWidget(w: Widget) {
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [w.config.printer, connected])
+    }, [w.config.printer, connected, subscriberId, subscribe, unsubscribe, setExtruder, setHeaterBed, setJob])
 
     if (loading) return <>Loading...</>;
     return (
-        <Card withBorder radius="md" p="md">
-            <Card.Section withBorder inheritPadding py="xs">
-                <Group justify="space-between">
-                    <Text fw={500} component="a" href={printer?.address} target="_blank">{printer?.name}</Text>
-                </Group>
-            </Card.Section>
-            <Card.Section>
+        <Card>
+            <CardHeader className="border-b">
+                <div className="flex items-center justify-between">
+                    <a href={printer?.address} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline">
+                        {printer?.name}
+                    </a>
+                </div>
+            </CardHeader>
+            <CardContent className="p-0">
                 <PrintProgressBar printerUuid={w.config.printer} />
-            </Card.Section>
-            <Card.Section withBorder inheritPadding py="xs">
-                <Group justify="space-between">
-                    <IconSkateboarding />
-                    <Text fw={500}>{job.message}{error?.message}</Text>
-                </Group>
-            </Card.Section>
-            <Card.Section withBorder inheritPadding py="xs">
-                <Group justify="space-between" preventGrowOverflow={true}  wrap="nowrap">
-                    <IconFile3d />
-                    <Text fw={500} truncate="end">{job.fileName}</Text>
-                </Group>
-            </Card.Section>
-            <Card.Section withBorder inheritPadding py="xs">
-                <Group justify="space-between">
-                    <IconPercentage />
-                    <Text fw={500}>Progress</Text>
-                    <Text fw={500}>{(job.progress * 100).toFixed(2)}%</Text>
-                </Group>
-            </Card.Section>
-            <Card.Section withBorder inheritPadding py="xs">
-                <Group justify="space-between">
-                    <Printer3dNozzleHeatOutlineIcon />
-                    <Text fw={500}>Nozzle</Text>
-                    <Text fw={500}>{(extruder.temperature ?? 0).toFixed(1)}°C</Text>
-                </Group>
-            </Card.Section>
-            <Card.Section withBorder inheritPadding py="xs">
-                <Group justify="space-between">
-                    <RadiatorDisabledIcon />
-                    <Text fw={500}>Bed</Text>
-                    <Text fw={500}>{(heaterBed?.temperature ?? 0).toFixed(1)}°C</Text>
-                </Group>
-            </Card.Section>
+            </CardContent>
+            <div className="border-t p-3">
+                <div className="flex items-center justify-between">
+                    <IconSkateboarding className="h-4 w-4" />
+                    <p className="font-medium">{job.message}{error?.message}</p>
+                </div>
+            </div>
+            <Separator />
+            <div className="border-t p-3">
+                <div className="flex items-center justify-between gap-2">
+                    <IconFile3d className="h-4 w-4 flex-shrink-0" />
+                    <p className="font-medium truncate">{job.fileName}</p>
+                </div>
+            </div>
+            <Separator />
+            <div className="border-t p-3">
+                <div className="flex items-center justify-between">
+                    <IconPercentage className="h-4 w-4" />
+                    <p className="font-medium">Progress</p>
+                    <p className="font-medium">{(job.progress * 100).toFixed(2)}%</p>
+                </div>
+            </div>
+            <Separator />
+            <div className="border-t p-3">
+                <div className="flex items-center justify-between">
+                    <Printer3dNozzleHeatOutlineIcon className="h-4 w-4" />
+                    <p className="font-medium">Nozzle</p>
+                    <p className="font-medium">{(extruder.temperature ?? 0).toFixed(1)}°C</p>
+                </div>
+            </div>
+            <Separator />
+            <div className="border-t p-3">
+                <div className="flex items-center justify-between">
+                    <RadiatorDisabledIcon className="h-4 w-4" />
+                    <p className="font-medium">Bed</p>
+                    <p className="font-medium">{(heaterBed?.temperature ?? 0).toFixed(1)}°C</p>
+                </div>
+            </div>
         </Card>
     )
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ExperimentalFeatures, Settings, SettingsContext } from "../settings/settingsContext";
 import useAxios from "axios-hooks";
-import { useLocalStorage } from "@mantine/hooks";
+import { useLocalStorage } from "usehooks-ts";
 
 export function SettingsProvider({ loading, children }) {
     const [settings, setSettings] = useState<Settings>({} as Settings);
@@ -9,11 +9,8 @@ export function SettingsProvider({ loading, children }) {
     const [{ }, getAgentSettings] = useAxios({}, { manual: true });
     const [ready, setReady] = useState(false);
 
-    const [experimental, setExperimental] = useLocalStorage<ExperimentalFeatures>({
-        key: 'experimental',
-        defaultValue: {
-            dashboard: false
-        }
+    const [experimental, setExperimental] = useLocalStorage<ExperimentalFeatures>('experimental', {
+        dashboard: false
     })
 
     useEffect(() => {

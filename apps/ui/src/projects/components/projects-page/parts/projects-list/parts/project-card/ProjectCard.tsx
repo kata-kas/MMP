@@ -1,9 +1,9 @@
-import { Card, Text, Group, rem } from '@mantine/core';
-import classes from './ProjectCard.module.css';
+import { Card } from '@/components/ui/card';
 import { Project } from "@/projects/entities/Project.ts";
 import { Link } from "react-router-dom";
 import { SettingsContext } from '@/core/settings/settingsContext';
 import { useContext } from 'react';
+import { cn } from "@/lib/utils";
 
 type ProjectCardProps = {
     project: Project,
@@ -12,67 +12,39 @@ type ProjectCardProps = {
 export function ProjectCard({ project }: ProjectCardProps) {
     const { settings } = useContext(SettingsContext);
 
-    const size = rem('280px');
     return (
-        <Card style={{ height: size, minHeight: size, minWidth: size, width: size }}
-            p="lg"
-            shadow="lg"
-            className={classes.card}
-            radius="md"
-            component={Link}
-            to={`/projects/${project.uuid}`}
+        <Card 
+            className={cn(
+                "h-[280px] min-h-[280px] min-w-[280px] w-[280px]",
+                "relative overflow-hidden transition-transform hover:scale-[1.03]",
+                "cursor-pointer"
+            )}
+            asChild
         >
-            {project.default_image_id &&
-                <div
-                    className={classes.image}
-                    style={{
-                        backgroundImage: `url(${settings.localBackend}/projects/${project.uuid}/assets/${project.default_image_id}/file)`,
-                        backgroundPosition: 'center',
-                    }}
-                />}
-            {!project.default_image_id &&
-                <div
-                    className={classes.image}
-                    style={{
-                        backgroundImage: `url(https://picsum.photos/seed/${project.uuid}/280)`,
-                        backgroundPosition: 'center',
-                    }}
-                />}
-            <div className={classes.overlay} />
-
-            <div className={classes.content}>
-                <div>
-
-                    <Group justify="space-between" gap="xs">
-                        <Text size="sm" className={classes.author}>
-                            {project.name}
-                        </Text>
-
-                        {/*<Group gap="lg">
-                            <Center>
-                                <IconEye
-                                    style={{width: rem(16), height: rem(16)}}
-                                    stroke={1.5}
-                                    color={theme.colors.dark[2]}
-                                />
-                                <Text size="sm" className={classes.bodyText}>
-                                    7847
-                                </Text>
-                            </Center>
-                            <Center>
-                                <IconMessageCircle
-                                    style={{width: rem(16), height: rem(16)}}
-                                    stroke={1.5}
-                                    color={theme.colors.dark[2]}
-                                />
-                                <Text size="sm" className={classes.bodyText}>
-                                    5
-                                </Text>
-                            </Center>
-                        </Group>*/}
-                    </Group>
+            <Link to={`/projects/${project.uuid}`}>
+                {project.default_image_id && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500"
+                        style={{
+                            backgroundImage: `url(${settings.localBackend}/projects/${project.uuid}/assets/${project.default_image_id}/file)`,
+                        }}
+                    />
+                )}
+                {!project.default_image_id && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500"
+                        style={{
+                            backgroundImage: `url(https://picsum.photos/seed/${project.uuid}/280)`,
+                        }}
+                    />
+                )}
+                <div className="absolute top-[20%] left-0 right-0 bottom-0 bg-gradient-to-b from-transparent via-transparent to-black/85" />
+                <div className="relative z-10 flex h-full flex-col justify-end p-4">
+                    <p className="text-sm font-medium text-white">
+                        {project.name}
+                    </p>
                 </div>
-            </div>
+            </Link>
         </Card>
     );
 }
