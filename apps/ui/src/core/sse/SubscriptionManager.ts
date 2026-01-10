@@ -40,29 +40,37 @@ export const createSubsManager = (url: string): SubscriptionManager => {
                 max_retry_time: 10,
             })
             state.source.onmessage = (e: MessageEvent) => {
-                const ev = JSON.parse(e.data);
+                const ev = JSON.parse(e.data) as { event?: string; data?: { uuid?: string; name?: string; state?: unknown } | unknown[] | unknown };
                 if (ev.event === 'connect') {
                     console.log("Connected", ev);
-                    state.sessionId = ev.data.uuid;
+                    const connectData = ev.data as { uuid?: string };
+                    state.sessionId = connectData.uuid ?? null;
                     state.onConnect && state.onConnect()
                     return;
                 }
                 if (ev.event) {
-                    if (ev.data.name) {
-                        state.evSubs.get(`${ev.event}.${ev.data.name}`)?.forEach(sub => sub.callback(ev.data));
-                    }
-                    if (ev.data.state) {
-                        state.evSubs.get(ev.event)?.forEach(sub => sub.callback(ev.data.state));
-                    } else if (Array.isArray(ev.data)) {
-                        ev.data.forEach((d: any) => {
-                            if (d.name) {
-                                state.evSubs.get(`${ev.event}.${d.name}`)?.forEach(sub => sub.callback(d.state));
+                    const eventData = ev.data;
+                    if (eventData && typeof eventData === 'object' && !Array.isArray(eventData)) {
+                        const dataObj = eventData as { name?: string; state?: unknown };
+                        if (dataObj.name) {
+                            state.evSubs.get(`${ev.event}.${dataObj.name}`)?.forEach(sub => sub.callback(eventData));
+                        }
+                        if (dataObj.state !== undefined) {
+                            state.evSubs.get(ev.event)?.forEach(sub => sub.callback(dataObj.state));
+                        } else {
+                            state.evSubs.get(ev.event)?.forEach(sub => sub.callback(eventData));
+                        }
+                    } else if (Array.isArray(eventData)) {
+                        eventData.forEach((d: unknown) => {
+                            const dObj = d as { name?: string; state?: unknown };
+                            if (dObj && typeof dObj === 'object' && dObj.name) {
+                                state.evSubs.get(`${ev.event}.${dObj.name}`)?.forEach(sub => sub.callback(dObj.state));
                             } else {
                                 state.evSubs.get(ev.event)?.forEach(sub => sub.callback(d))
                             }
                         })
                     } else {
-                        state.evSubs.get(ev.event)?.forEach(sub => sub.callback(ev.data));
+                        state.evSubs.get(ev.event)?.forEach(sub => sub.callback(eventData));
                     }
                 }
             }

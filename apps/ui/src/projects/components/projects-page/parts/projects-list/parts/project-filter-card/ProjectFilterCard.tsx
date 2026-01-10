@@ -22,7 +22,7 @@ export function ProjectFilterCard({ onChange }: ProjectFilterCardProps) {
     const { settings } = useContext(SettingsContext);
     const [filter, setFilter] = useState<Filter>({ name: '', tags: [] })
     const [tags, setTags] = useState<string[]>([]);
-    const [{ data, loading, error }] = useAxios<Tag[]>(
+    const [{ data, loading }] = useAxios<Tag[]>(
         `${settings.localBackend}/tags`
     );
 
@@ -31,7 +31,7 @@ export function ProjectFilterCard({ onChange }: ProjectFilterCardProps) {
         setTags(data.map(t => t.value));
     }, [data])
 
-    const clear = () => {
+    const handleClear = () => {
         setFilter({ name: '', tags: [] })
         onChange({ name: '', tags: [] })
     }
@@ -66,7 +66,7 @@ export function ProjectFilterCard({ onChange }: ProjectFilterCardProps) {
                 />
                 <div className="flex justify-end gap-2">
                     <Button onClick={() => onChange(filter)}>Apply</Button>
-                    <Button variant="outline" onClick={clear}>Clear</Button>
+                    <Button variant="outline" onClick={handleClear}>Clear</Button>
                 </div>
             </CardContent>
         </Card>

@@ -19,7 +19,7 @@ type ProjectOperationsProps = {
     onProjectChange: (p: Project) => void;
 }
 
-export function ProjectOperations({ project, onProjectChange }: ProjectOperationsProps) {
+export function ProjectOperations({ project }: ProjectOperationsProps) {
     const { settings } = useContext(SettingsContext);
 
     const [path, setPath] = useState(project.path);
@@ -27,7 +27,7 @@ export function ProjectOperations({ project, onProjectChange }: ProjectOperation
     const [{ loading }, moveProject] = useAxios({
         method: 'post',
     }, { manual: true })
-    const [{ data: paths, loading: lPaths, error: ePaths }] = useAxios(
+    const [{ data: paths, loading: lPaths }] = useAxios<string[]>(
         {
             url: `${settings.localBackend}/system/paths`
         }
@@ -41,7 +41,7 @@ export function ProjectOperations({ project, onProjectChange }: ProjectOperation
             }
         }).then(({ data }) => {
             console.log(data);
-            setPath(data.path)
+            setPath((data as { path?: string }).path ?? project.path)
             toast.success('Great Success!', {
                 description: 'Project moved',
             })
@@ -72,7 +72,7 @@ export function ProjectOperations({ project, onProjectChange }: ProjectOperation
                         <CommandList>
                             <CommandEmpty>No path found.</CommandEmpty>
                             <CommandGroup>
-                                {paths?.map((p: string) => (
+                                {paths?.map((p) => (
                                     <CommandItem
                                         key={p}
                                         value={p}

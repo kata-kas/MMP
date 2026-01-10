@@ -1,7 +1,7 @@
 import { Widget } from "@/dashboard/entities/WidgetType";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
 import { Job, Printer, Thermal } from "@/printers/entities/Printer";
 import useAxios from "axios-hooks";
@@ -16,9 +16,8 @@ import { useId } from 'react';
 export function PrinterTableWidget(w: Widget) {
     const { settings } = useContext(SettingsContext);
     const subscriberId = useId();
-    const [{ data: printer, loading }] = useAxios<Printer>({ url: `${settings.localBackend}/printers/${w.config.printer}` })
+    const [{ data: printer, loading }] = useAxios<Printer>({ url: `${settings.localBackend}/printers/${(w.config as { printer?: string }).printer}` })
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
-    const [error, setError] = useState<Error | null>(null);
     const [extruder, setExtruder] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [heaterBed, setHeaterBed] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [job, setJob] = useCumulativeEvent<Job>({ progress: 0, fileName: "", message: "" });
@@ -29,27 +28,30 @@ export function PrinterTableWidget(w: Widget) {
         setHeaterBed({ temperature: 0 });
         const subscription = {
             subscriberId,
-            provider: `printers/${w.config.printer}`,
+            provider: `printers/${(w.config as { printer?: string }).printer}`,
         }
-        subscribe({
-            ...subscription,
-            event: `printer.update.${w.config.printer}.extruder`,
-            callback: setExtruder
-        }).catch(setError);
-        subscribe({
-            ...subscription,
-            event: `printer.update.${w.config.printer}.bed`,
-            callback: setHeaterBed
-        })
-        subscribe({
-            ...subscription,
-            event: `printer.update.${w.config.printer}.job_status`,
-            callback: setJob
-        }).catch(setError);
+        const printerUuid = (w.config as { printer?: string }).printer;
+        if (printerUuid) {
+            subscribe({
+                ...subscription,
+                event: `printer.update.${printerUuid}.extruder`,
+                callback: setExtruder
+            }).catch(() => {});
+            subscribe({
+                ...subscription,
+                event: `printer.update.${printerUuid}.bed`,
+                callback: setHeaterBed
+            }).catch(() => {});
+            subscribe({
+                ...subscription,
+                event: `printer.update.${printerUuid}.job_status`,
+                callback: setJob
+            }).catch(() => {});
+        }
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [w.config.printer, connected, subscriberId, subscribe, unsubscribe, setExtruder, setHeaterBed, setJob])
+    }, [w.config, connected, subscriberId, subscribe, unsubscribe, setExtruder, setHeaterBed, setJob])
 
     if (loading) return <>Loading...</>;
     return (
@@ -62,12 +64,12 @@ export function PrinterTableWidget(w: Widget) {
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                <PrintProgressBar printerUuid={w.config.printer} />
+                <PrintProgressBar printerUuid={(w.config as { printer?: string }).printer ?? ''} />
             </CardContent>
             <div className="border-t p-3">
                 <div className="flex items-center justify-between">
                     <IconSkateboarding className="h-4 w-4" />
-                    <p className="font-medium">{job.message}{error?.message}</p>
+                    <p className="font-medium">{job.message}</p>
                 </div>
             </div>
             <Separator />

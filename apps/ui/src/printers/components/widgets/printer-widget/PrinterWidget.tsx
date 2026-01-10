@@ -13,7 +13,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 export function PrinterWidget(w: Widget) {
     const { settings } = useContext(SettingsContext);
-    const [{ data: printer, loading }] = useAxios<Printer>({ url: `${settings.localBackend}/printers/${w.config.printer}` })
+    const [{ data: printer, loading }] = useAxios<Printer>({ url: `${settings.localBackend}/printers/${(w.config as { printer?: string }).printer}` })
     const state = {};
     if (loading) return <>Loading...</>;
     return (
@@ -23,7 +23,7 @@ export function PrinterWidget(w: Widget) {
                     {printer?.camera_url ? (
                         <img
                             className="h-full w-full object-cover"
-                            src={`${settings.localBackend}/printers/${w.config.printer}/stream`}
+                            src={`${settings.localBackend}/printers/${(w.config as { printer?: string }).printer}/stream`}
                             alt={printer.name}
                         />
                     ) : (
@@ -37,7 +37,7 @@ export function PrinterWidget(w: Widget) {
             </CardHeader>
 
             <CardContent className="p-0">
-                <PrintProgressBar printerUuid={w.config.printer} />
+                <PrintProgressBar printerUuid={(w.config as { printer?: string }).printer ?? ''} />
             </CardContent>
             
             <CardHeader className="p-3">
@@ -57,8 +57,8 @@ export function PrinterWidget(w: Widget) {
             </CardHeader>
             
             <CardFooter className="flex justify-center gap-4">
-                <ExtruderTemp printerUuid={w.config.printer} />
-                <BedTemp printerUuid={w.config.printer} />
+                <ExtruderTemp printerUuid={(w.config as { printer?: string }).printer ?? ''} />
+                <BedTemp printerUuid={(w.config as { printer?: string }).printer ?? ''} />
                 <PrintProgress state={state} />
             </CardFooter>
         </Card>

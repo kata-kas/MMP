@@ -12,7 +12,7 @@ export function Refresher({ projectUUID }: RefresherProps) {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
     const [assetUpdate, setAssetUpdate] = useState({} as Record<string, unknown>)
-    const [_error, setError] = useState<Error | null>(null);
+    const [, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
         setAssetUpdate({})
@@ -28,7 +28,7 @@ export function Refresher({ projectUUID }: RefresherProps) {
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [connected])
+    }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
         console.log(assetUpdate)

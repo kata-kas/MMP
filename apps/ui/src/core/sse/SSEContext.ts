@@ -4,7 +4,7 @@ export type Subscription = {
     subscriberId: string,
     provider: string,
     event: string,
-    callback: (data: any) => void
+    callback: (data: unknown) => void
 }
 
 interface SSEContextType {

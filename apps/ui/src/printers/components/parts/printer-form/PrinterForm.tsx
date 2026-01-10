@@ -43,7 +43,7 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
             }
         })
             .then(({ data }) => {
-                onPrinterChange(data)
+                onPrinterChange(data as Printer)
                 toast.success('Great Success!', {
                     description: 'Project updated',
                 })
@@ -54,15 +54,16 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
     };
 
     const connect = () => {
-        const values = form.getValues();
+        const values = form.getValues() as { address: string; type: string };
         if (values.address != '' && values.type != '') {
             const tyype = printerTypes.get(values.type)
             if (!tyype) return;
             executTest({ data: values })
                 .then(({ data }) => {
-                    form.setValue('version', data.version)
-                    form.setValue('state', data.state)
-                    form.setValue('status', data.status)
+                    const responseData = data as { version?: string; state?: string; status?: string };
+                    if (responseData.version) form.setValue('version', responseData.version)
+                    if (responseData.state) form.setValue('state', responseData.state)
+                    if (responseData.status) form.setValue('status', responseData.status)
                 })
                 .catch((e) => {
                     console.log(e)
@@ -93,7 +94,7 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
                         <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                        {Array.from(printerTypes.values()).map(t => (
+                        {Array.from(printerTypes.values()).map((t: { type: string }) => (
                             <SelectItem key={t.type} value={t.type}>{t.type}</SelectItem>
                         ))}
                     </SelectContent>

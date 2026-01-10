@@ -17,7 +17,7 @@ type DropDownMenuProps = {
 
 export function DropDownMenu({ id, projectUuid, children, downloadURL, onDelete, openDetails, toggleLoad }: DropDownMenuProps) {
     const { settings } = useContext(SettingsContext);
-    const [{ }, callDelete] = useAxios(
+    const [, callDelete] = useAxios(
         {
             url: `${settings.localBackend}/projects/${projectUuid}/assets/${id}/delete`,
             method: 'POST'

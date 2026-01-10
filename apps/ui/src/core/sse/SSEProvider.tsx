@@ -37,7 +37,7 @@ export function SSEProvider({ children }) {
             console.log('qweqew')
             subManager?.close();
         }
-    }, [settings.localBackend])
+    }, [settings.localBackend, subManager])
 
 
 

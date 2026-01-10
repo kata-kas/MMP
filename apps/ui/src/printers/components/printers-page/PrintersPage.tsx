@@ -19,7 +19,7 @@ export function PrintersPage() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
     const { settings } = useContext(SettingsContext);
     const [printers, setPrinters] = useState<Printer[]>([])
-    const [{ data, loading: cLoading, error }] = useAxios({ url: `${settings.localBackend}/printers?_=${reload.current}` })
+    const [{ data }] = useAxios<Printer[]>({ url: `${settings.localBackend}/printers?_=${reload.current}` })
     const [{ loading: dLoading }, executeDelete] = useAxios({ method: 'POST' }, { manual: true })
     
     useEffect(() => {
@@ -75,7 +75,7 @@ export function PrintersPage() {
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <Avatar className="h-8 w-8">
-                                                <AvatarImage src={printerTypes.get(printer.type)?.logo} />
+                                                <AvatarImage src={(printerTypes.get(printer.type) as { logo?: string } | undefined)?.logo ?? undefined} />
                                                 <AvatarFallback>{printer.name[0]}</AvatarFallback>
                                             </Avatar>
                                             <div>

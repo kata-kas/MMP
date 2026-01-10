@@ -9,9 +9,9 @@ export interface WidgetType {
   name: string,
   description: string,
   type: string,
-  icon: React.ReactElement<any>,
-  element: React.ReactElement<any>,
-  configElement: React.ReactElement<any>,
+  icon: React.ReactElement,
+  element: React.ReactElement,
+  configElement: React.ReactElement,
   layout: {
     w: number;
     h: number;
@@ -26,11 +26,11 @@ export interface WidgetType {
 export interface Widget {
   id: string,
   type: string,
-  config: any,
+  config: unknown,
   layout: Layout
 }
 
 export interface WidgetConfig {
-  config: any,
-  onChange: (config: any) => void
+  config: unknown,
+  onChange: (config: unknown) => void
 }

@@ -9,7 +9,7 @@ import { Responsive, WidthProvider } from "react-grid-layout";
 const ReactGridLayout = WidthProvider(Responsive);
 
 export function Dashboard() {
-    const { widgets, setWidgets, layout, setLayout } = useContext(dashboardContext)
+    const { widgets, setWidgets, layout, setLayout } = useContext(dashboardContext) as { widgets: unknown[]; setWidgets: (w: unknown[]) => void; layout: unknown; setLayout: (l: unknown) => void }
     const [locked, setLocked] = useState(true);
     const [edit, setEdit] = useState(false);
 
@@ -35,7 +35,7 @@ export function Dashboard() {
             isDraggable={!locked}
             isResizable={!locked}
             onLayoutChange={(l, ls) => {
-                console.log(l, ls['lg'] ? ls['lg'][0] : ls['lg']);
+                console.log(l, ls['lg'] ? (ls['lg'] as unknown[])[0] : ls['lg']);
                 setLayout(ls)
             }}
             layouts={layout}
@@ -43,11 +43,14 @@ export function Dashboard() {
             cols={{ xlg: 16, lg: 12, md: 6, sm: 4, xs: 2, xxs: 1 }}
             rowHeight={50}
         >
-            {widgets.map((widget, i) => (
-                <div key={widget.id} data-grid={widget.layout}>
-                    <Widget model={widget} edit={edit} onDelete={() => { deleteWidget(i) }} />
-                </div>
-            ))}
+            {widgets.map((widget, i) => {
+                const w = widget as { id: string; layout: unknown };
+                return (
+                    <div key={w.id} data-grid={w.layout}>
+                        <Widget model={widget} edit={edit} onDelete={() => { deleteWidget(i) }} />
+                    </div>
+                );
+            })}
         </ReactGridLayout>
     </>)
 }

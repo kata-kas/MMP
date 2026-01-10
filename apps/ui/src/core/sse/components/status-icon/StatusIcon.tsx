@@ -1,7 +1,7 @@
 import { useContext } from "react"
 import { SSEContext } from "../../SSEContext"
 import { Button } from "@/components/ui/button"
-import { Loader2, Smile, Skull } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { IconMoodSmileBeam, IconSkull } from "@tabler/icons-react"
 
 export function StatusIcon({ className, ...props }: React.HTMLAttributes<HTMLButtonElement>) {

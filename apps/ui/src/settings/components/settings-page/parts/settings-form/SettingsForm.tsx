@@ -10,12 +10,11 @@ import { Render } from "./parts/Render";
 import { Integrations } from "./parts/Integrations";
 import { AgentSettings } from "@/settings/entities/AgentSettings";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 export function SettingsForm() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
     const { settings } = useContext(SettingsContext);
-    const [{ data, loading: cLoading, error }] = useAxios({ url: `${settings.localBackend}/system/settings?_=${reload.current}` })
+    const [{ data, loading: cLoading }] = useAxios<AgentSettings>({ url: `${settings.localBackend}/system/settings?_=${reload.current}` })
 
     const [{ loading: sLoading }, executeSave] = useAxios({
         url: `${settings.localBackend}/system/settings`,
@@ -61,7 +60,7 @@ export function SettingsForm() {
         executeSave({
             data: formData
         })
-            .then(({ data }) => {
+            .then(() => {
                 toast.success('Great Success!', {
                     description: 'Settings updated',
                 })

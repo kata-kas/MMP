@@ -2,7 +2,7 @@ import React from 'react';
 
 export interface Settings {
     localBackend: string,
-    agent?: {}
+    agent?: Record<string, unknown>
     experimental: ExperimentalFeatures
 }
 export interface ExperimentalFeatures {

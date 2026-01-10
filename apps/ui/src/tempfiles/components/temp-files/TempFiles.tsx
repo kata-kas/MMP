@@ -16,9 +16,9 @@ export function TempFiles() {
     const { settings } = useContext(SettingsContext);
     const [tempFiles, setTempFiles] = useState<TempFile[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
-    const [{ }, callSendToProject] = useAxios({ url: `${settings.localBackend}/tempfiles/xxx`, method: 'post' }, { manual: true })
-    const [{ }, callDeleteTemp] = useAxios({ url: `${settings.localBackend}/tempfiles/xxx/delete`, method: 'post' }, { manual: true })
-    const [{ data, loading, error }] = useAxios(
+    const [, callSendToProject] = useAxios({ url: `${settings.localBackend}/tempfiles/xxx`, method: 'post' }, { manual: true })
+    const [, callDeleteTemp] = useAxios({ url: `${settings.localBackend}/tempfiles/xxx/delete`, method: 'post' }, { manual: true })
+    const [{ data, loading }] = useAxios<TempFile[]>(
         `${settings.localBackend}/tempfiles?_=${reload.current}`
     );
     useEffect(() => {
@@ -26,7 +26,7 @@ export function TempFiles() {
         setTempFiles(data);
     }, [data]);
 
-    const [{ data: projects, loading: pLoading, error: pError }] = useAxios<Project[]>(
+    const [{ data: projects, loading: pLoading }] = useAxios<Project[]>(
         `${settings.localBackend}/projects/list?_=${reload.current}`
     );
 
@@ -43,8 +43,7 @@ export function TempFiles() {
             url: `${settings.localBackend}/tempfiles/${tempFiles[i].uuid}`,
             data: tempFiles[i]
         })
-            .then(({ data }) => {
-                console.log(data);
+            .then(() => {
                 const copy = [...tempFiles]
                 copy.splice(i, 1)
                 setTempFiles(copy)
@@ -64,8 +63,7 @@ export function TempFiles() {
         callDeleteTemp({
             url: `${settings.localBackend}/tempfiles/${tempFiles[i].uuid}/delete`
         })
-            .then(({ data }) => {
-                console.log(data);
+            .then(() => {
                 const copy = [...tempFiles]
                 copy.splice(i, 1)
                 setTempFiles(copy)

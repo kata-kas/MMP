@@ -5,11 +5,10 @@ import { useForm } from "react-hook-form";
 import useAxios from "axios-hooks";
 import { useContext } from "react";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { cn } from "@/lib/utils";
 
 export function ImportProject() {
     const { settings } = useContext(SettingsContext);
-    const [{ loading, error }, fetchProject] = useAxios({
+    const [{ loading }] = useAxios({
         url: `${settings.localBackend}/downloader/fetch`,
         method: 'post',
     }, { manual: true })
@@ -22,12 +21,15 @@ export function ImportProject() {
     
     const onFetch = (data: { urls: string }) => {
         const urls = data.urls.split('\n');
-        fetchProject({
+        const promise = fetchProject({
             data: {
                 url: urls.join(',')
             }
-        }).then(({ data }) => {
-            console.log(data);
+        }) as Promise<unknown>;
+        promise.then(() => {
+            // Project fetch completed
+        }).catch(() => {
+            // Error handling
         })
     }
     

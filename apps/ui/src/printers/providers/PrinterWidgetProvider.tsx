@@ -27,7 +27,7 @@ export function PrinterWidgetProvider() {
             configElement: <PrinterWidgetConfig {...{} as WidgetConfig} />,
             layout: { h: 5, w: 2, isResizable: true }
         })
-    }, [])
+    }, [addWidgetType])
 
 
     return null

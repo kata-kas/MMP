@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, Image as ImageIcon } from "lucide-react";
 import { IconExternalLink } from '@tabler/icons-react';
 import { stringToNumber } from "@/core/utils/color.ts";
 import { Tag } from '@/projects/entities/Project';
@@ -18,7 +17,7 @@ type HeaderProps = {
     onTagClick?: (tag: Tag) => void
 }
 
-const getBadgeColor = (tagValue: string, index: number) => {
+const getBadgeColor = (tagValue: string) => {
     const colors = [
         "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
         "bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100",
@@ -87,7 +86,7 @@ export function Header({ title, description, loading, imagePath, link, tags, onT
                 {description && (
                     <div className="mb-6 text-lg text-white/90 line-clamp-3">
                         <div
-                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description, { sanitize: true }) }}
+                            dangerouslySetInnerHTML={{ __html: String((DOMPurify as { sanitize: (html: string) => string }).sanitize(description)) }}
                         />
                     </div>
                 )}

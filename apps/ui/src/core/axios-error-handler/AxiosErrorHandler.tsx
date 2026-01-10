@@ -9,10 +9,11 @@ export function AxiosErrorHandler() {
         initialized.current = true;
         axios.interceptors.response.use(
             (response) => response,
-            async (error) => {
-                if (error.code != "ERR_CANCELED") {
+            async (error: unknown) => {
+                const axiosError = error as { code?: string; response?: { data?: { message?: string } }; message?: string };
+                if (axiosError.code !== "ERR_CANCELED") {
                     console.log(error)
-                    let message = error.response?.data?.message || error.message;
+                    const message = axiosError.response?.data?.message || axiosError.message || "An error occurred";
                     toast.error('Ops... An error occurred!', {
                         description: message,
                         duration: Infinity,

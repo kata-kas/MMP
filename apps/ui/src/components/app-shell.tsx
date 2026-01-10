@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "react-responsive"
 

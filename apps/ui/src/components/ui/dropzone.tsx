@@ -132,21 +132,24 @@ const getRootError = (
 ) => {
   const errors = errorCodes.map((error) => {
     switch (error) {
-      case "file-invalid-type":
+      case "file-invalid-type": {
         const acceptedTypes = Object.values(limits.accept ?? {})
           .flat()
           .join(", ");
         return `only ${acceptedTypes} are allowed`;
-      case "file-too-large":
+      }
+      case "file-too-large": {
         const maxMb = limits.maxSize
           ? (limits.maxSize / (1024 * 1024)).toFixed(2)
           : "infinite?";
         return `max size is ${maxMb}MB`;
-      case "file-too-small":
+      }
+      case "file-too-small": {
         const roundedMinSize = limits.minSize
           ? (limits.minSize / (1024 * 1024)).toFixed(2)
           : "negative?";
         return `min size is ${roundedMinSize}MB`;
+      }
       case "too-many-files":
         return `max ${limits.maxFiles} files`;
     }
@@ -334,8 +337,7 @@ const useDropzone = <TUploadRes, TUploadError = string>(
           : validation?.maxFiles - fileCount;
 
       if (maxNewFiles < newFiles.length) {
-        if (shiftOnMaxFiles === true) {
-        } else {
+        if (shiftOnMaxFiles !== true) {
           setRootError(getRootError(["too-many-files"], validation ?? {}));
         }
       }
@@ -434,12 +436,10 @@ const DropZoneArea = forwardRef<HTMLDivElement, DropZoneAreaProps>(
       context.getRootProps();
 
     return (
-      // A11y behavior is handled through Trigger. All of these are only relevant to drag and drop which means this should be fine?
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
       <div
         ref={(instance) => {
           // TODO: test if this actually works?
-          ref.current = instance;
+          (ref as { current: unknown }).current = instance;
           if (typeof forwardedRef === "function") {
             forwardedRef(instance);
           } else if (forwardedRef) {

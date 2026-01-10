@@ -8,7 +8,7 @@ export function NewProjectNotification() {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
     const [message, setMessage] = useState({} as Record<string, unknown>)
-    const [_error, setError] = useState<Error | null>(null);
+    const [, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
         setMessage({})
@@ -24,7 +24,7 @@ export function NewProjectNotification() {
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [connected])
+    }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
         console.log(message)

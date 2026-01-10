@@ -33,7 +33,7 @@ export function AddAsset({ projectUuid }: AddAssetProps) {
                     .then(({ data }) => {
                         console.log(data);
                         toast.success('Great Success!', {
-                            description: `${data.name} as added to your project!`,
+                            description: `${(data as { name?: string }).name ?? 'Asset'} as added to your project!`,
                         })
                     })
                     .catch((e) => {

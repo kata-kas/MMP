@@ -18,7 +18,7 @@ export function ProjectsList() {
     const [perPage, setPerPage] = useState('20')
     const [projects, setProjects] = useState<Project[]>([])
     const [filter, setFilter] = useState<Filter>({ name: '', tags: [] })
-    const [{ data, loading, error }] = useAxios(
+    const [{ data, loading, error }] = useAxios<{ items?: Project[]; page?: number; total_pages?: number }>(
         `${settings.localBackend}/projects?page=${page - 1}&size=${perPage}${filter.name ? '&name=' + filter.name : ''}${filter.tags.length > 0 ? '&tags=' + filter.tags?.join(",") : ''}&_=${reload.current}`
     );
     useEffect(() => {

@@ -5,8 +5,8 @@ import { useLocalStorage } from "usehooks-ts";
 
 export function SettingsProvider({ loading, children }) {
     const [settings, setSettings] = useState<Settings>({} as Settings);
-    const [{ }, getSettings] = useAxios<Settings>(`/settings.json`, { manual: true });
-    const [{ }, getAgentSettings] = useAxios({}, { manual: true });
+    const [, getSettings] = useAxios<Settings>(`/settings.json`, { manual: true });
+    const [, getAgentSettings] = useAxios({}, { manual: true });
     const [ready, setReady] = useState(false);
 
     const [experimental, setExperimental] = useLocalStorage<ExperimentalFeatures>('experimental', {
@@ -22,7 +22,7 @@ export function SettingsProvider({ loading, children }) {
             .then(({ data: s }) => {
                 getAgentSettings({ url: `${s.localBackend}/system/settings` })
                     .then(({ data: agent }) => {
-                        setSettings(prev => ({ ...prev, ...s, agent }))
+                        setSettings(prev => ({ ...prev, ...s, agent: agent as Record<string, unknown> }))
                         console.log(s);
                         setReady(true);
                     })
@@ -30,7 +30,7 @@ export function SettingsProvider({ loading, children }) {
             .catch((e) => {
                 console.log(e)
             });
-    }, [])
+    }, [getSettings, getAgentSettings])
 
     return (
         <SettingsContext.Provider value={{ settings, setExperimental }}>

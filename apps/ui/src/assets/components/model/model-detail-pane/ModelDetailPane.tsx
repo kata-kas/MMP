@@ -3,7 +3,7 @@ import { Canvas, useLoader, useThree } from '@react-three/fiber'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { Suspense, useContext, useLayoutEffect, useRef, useEffect, useState } from "react";
 import { Asset } from "../../../entities/Assets.ts";
-import { Center, GizmoHelper, GizmoViewport, Grid, Html, OrbitControls, useProgress } from '@react-three/drei'
+import { Center, GizmoHelper, GizmoViewport, Html, OrbitControls, useProgress } from '@react-three/drei'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SettingsContext } from '@/core/settings/settingsContext.ts';
 import { X } from "lucide-react";
@@ -17,7 +17,7 @@ type ModelProps = {
 
 function Model({ color, model, projectUuid }: ModelProps) {
     const { settings } = useContext(SettingsContext);
-    const geom = useLoader(STLLoader, `${settings.localBackend}/projects/${projectUuid}/assets/${model.id}/file`);
+    const geom = useLoader(STLLoader, `${settings.localBackend}/projects/${projectUuid}/assets/${model.id}/file`) as THREE.BufferGeometry;
     const meshRef = useRef<THREE.Mesh>(null!)
 
     const [active, setActive] = useState(false)
@@ -79,8 +79,8 @@ function MoveCamera({ children, models }: { children: JSX.Element[], models: Ass
         box.getSize(size);
         const fov = camera.fov * (Math.PI / 180);
         const fovh = 2 * Math.atan(Math.tan(fov / 2) * camera.aspect);
-        let dx = size.z / 2 + Math.abs(size.x / 2 / Math.tan(fovh / 2));
-        let dy = size.z / 2 + Math.abs(size.y / 2 / Math.tan(fov / 2));
+        const dx = size.z / 2 + Math.abs(size.x / 2 / Math.tan(fovh / 2));
+        const dy = size.z / 2 + Math.abs(size.y / 2 / Math.tan(fov / 2));
         let cameraZ = Math.max(dx, dy);
 
         cameraZ *= 1.25;
@@ -106,10 +106,11 @@ function MoveCamera({ children, models }: { children: JSX.Element[], models: Ass
 
         camera.far = cameraToFarEdge * 3;
         camera.updateProjectionMatrix();
+        const currentGroup = group.current;
         return () => {
-            if (group.current) {
-                group.current.remove(box3Helper);
-                group.current.remove(axesHelper);
+            if (currentGroup) {
+                currentGroup.remove(box3Helper);
+                currentGroup.remove(axesHelper);
             }
         }
     }, [models, camera]);
@@ -179,18 +180,3 @@ export function ModelDetailPane({ models, projectUuid, onClose }: ModelDetailPan
     );
 }
 
-function Ground() {
-    const gridConfig = {
-        cellSize: 0.5,
-        cellThickness: 0.5,
-        cellColor: '#6f6f6f',
-        sectionSize: 3,
-        sectionThickness: 1,
-        sectionColor: '#9d4b4b',
-        fadeDistance: 30,
-        fadeStrength: 1,
-        followCamera: false,
-        infiniteGrid: true
-    }
-    return <Grid position={[0, -0.01, 0]} args={[10.5, 10.5]} {...gridConfig} />
-}

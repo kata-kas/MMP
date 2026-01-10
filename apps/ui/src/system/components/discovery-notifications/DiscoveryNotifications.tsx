@@ -9,7 +9,7 @@ export function DiscoveryNotifications() {
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
     const [toastId, setToastId] = useState<string | number | null>(null);
     const [message, setMessage] = useState({} as Record<string, unknown>)
-    const [_error, setError] = useState<Error | null>(null);
+    const [, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
         setMessage({} as Record<string, unknown>)
@@ -25,7 +25,7 @@ export function DiscoveryNotifications() {
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [connected])
+    }, [connected, subscriberId, subscribe, unsubscribe])
 
     useEffect(() => {
         console.log(message)

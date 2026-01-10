@@ -23,7 +23,7 @@ type ProjectFormProps = {
 export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFormProps) {
     const { settings } = useContext(SettingsContext);
     const [files, setFiles] = useState<File[]>([]);
-    const [{ data, loading, error }, executeSave] = useAxios(
+    const [{ loading }, executeSave] = useAxios(
         {
             method: 'POST'
         },
@@ -39,7 +39,7 @@ export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFor
 
     const dropzone = useDropzone({
         onDrop: (acceptedFiles) => {
-            setFiles(prev => [...prev, ...acceptedFiles]);
+            setFiles(prev => [...prev, ...(acceptedFiles as File[])]);
         },
     });
 

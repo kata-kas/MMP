@@ -13,7 +13,7 @@ export type SetAsMainProps = {
 
 export function SetAsMain({ projectUuid, assetId, onChange }: SetAsMainProps) {
     const { settings } = useContext(SettingsContext);
-    const [{ }, callSetMainImage] = useAxios(
+    const [, callSetMainImage] = useAxios(
         {
             url: `${settings.localBackend}/projects/${projectUuid}/image`,
             method: 'POST'

@@ -12,7 +12,7 @@ export interface Asset {
     extension: string
     mime_type: string
     image_id: string
-    properties: any
+    properties: Record<string, string>
 }
 
 export interface AssetType {

@@ -20,6 +20,6 @@ export interface Job {
     fileName: string,
 }
 
-export const printerTypes = new Map<string, any>([["klipper", { type: 'klipper', name: 'Klipper', logo: 'images/klipper-logo.png' }], ["octoPrint", { type: 'octoPrint', name: 'op', logo: 'images/octoprint-logo.png' }]])
+export const printerTypes = new Map<string, { type: string; name: string; logo: string }>([["klipper", { type: 'klipper', name: 'Klipper', logo: 'images/klipper-logo.png' }], ["octoPrint", { type: 'octoPrint', name: 'op', logo: 'images/octoprint-logo.png' }]])
 
 

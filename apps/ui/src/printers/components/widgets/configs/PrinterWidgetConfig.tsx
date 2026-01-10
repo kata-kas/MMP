@@ -10,10 +10,10 @@ export function PrinterWidgetConfig({ config, onChange }: WidgetConfig) {
     const [cfg, setCfg] = useState(config)
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
     const { settings } = useContext(SettingsContext);
-    const [{ data, loading, error }] = useAxios<Printer[]>({ url: `${settings.localBackend}/printers?_=${reload.current}` })
+    const [{ data, loading }] = useAxios<Printer[]>({ url: `${settings.localBackend}/printers?_=${reload.current}` })
 
     const proxyOnChange = (v: string) => {
-        const c = { ...cfg, printer: v }
+        const c = { ...cfg, printer: v } as unknown
         setCfg(c)
         onChange(c)
     }
@@ -22,7 +22,7 @@ export function PrinterWidgetConfig({ config, onChange }: WidgetConfig) {
         <div className="space-y-2">
             <Label>Select Printer</Label>
             <Select
-                value={cfg?.printer || ""}
+                value={(cfg as { printer?: string })?.printer || ""}
                 onValueChange={proxyOnChange}
                 disabled={loading}
             >

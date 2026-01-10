@@ -6,7 +6,6 @@ import { TagsInput } from "@/components/ui/tags-input";
 import { IconFilter, IconSearch, IconX } from "@tabler/icons-react";
 import useAxios from "axios-hooks";
 import { useContext, useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
 
 export type Filter = {
     name: string;
@@ -23,7 +22,7 @@ export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
     const [filter, setFilter] = useState<Filter>(value)
     const [tags, setTags] = useState<string[]>([]);
     const [opened, setOpened] = useState(false);
-    const [{ data, loading, error }] = useAxios<Tag[]>(
+    const [{ data, loading }] = useAxios<Tag[]>(
         `${settings.localBackend}/tags`
     );
 
@@ -32,10 +31,6 @@ export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
         setTags(data.map(t => t.value));
     }, [data])
 
-    const clear = () => {
-        setFilter({ name: '', tags: [] })
-        onChange({ name: '', tags: [] })
-    }
 
     useEffect(() => {
         setFilter(value)
@@ -54,10 +49,7 @@ export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
             >
                 {!opened ? <IconFilter className="h-5 w-5" /> : <IconX className="h-5 w-5" />}
             </Button>
-            <div className={cn(
-                "flex items-center gap-2 transition-all",
-                opened ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0 w-0 overflow-hidden"
-            )}>
+            <div className={`flex items-center gap-2 transition-all ${opened ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0 w-0 overflow-hidden"}`}>
                 <Input 
                     placeholder="Name" 
                     value={filter.name} 

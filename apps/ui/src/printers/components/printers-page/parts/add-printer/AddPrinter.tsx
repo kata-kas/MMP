@@ -6,7 +6,7 @@ export function AddPrinter() {
     const navigate = useNavigate();
     return (
         <div className="container mx-auto max-w-4xl">
-            <PrinterForm printer={{ name: '', type: '', address: '' } as Printer} onPrinterChange={function (p: Printer): void {
+            <PrinterForm printer={{ name: '', type: '', address: '' } as Printer} onPrinterChange={function (): void {
                 navigate("/printers")
             }} />
         </div>

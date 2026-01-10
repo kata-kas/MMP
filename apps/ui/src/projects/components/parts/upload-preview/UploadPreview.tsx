@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileIcon, Image as ImageIcon } from "lucide-react";
 import { IconFile } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
