@@ -7,8 +7,8 @@ import { Link } from "react-router-dom";
 export function NewProjectNotification() {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
-    const [message, setMessage] = useState({} as any)
-    const [error, setError] = useState<Error | null>(null);
+    const [message, setMessage] = useState({} as Record<string, unknown>)
+    const [_error, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
         setMessage({})
@@ -29,11 +29,12 @@ export function NewProjectNotification() {
     useEffect(() => {
         console.log(message)
         if (!message.state) return;
-        if (message.state.type == "new") {
+        const state = message.state as Record<string, unknown>;
+        if (state?.type == "new") {
             toast.success(`New project found`, {
                 description: (
                     <span>
-                        Go to <Link to={`/projects/${message.state.projectUUID}`} className="underline">{message.state.projectName}</Link>
+                        Go to <Link to={`/projects/${state?.projectUUID}`} className="underline">{(state?.projectName as string)}</Link>
                     </span>
                 ),
             })

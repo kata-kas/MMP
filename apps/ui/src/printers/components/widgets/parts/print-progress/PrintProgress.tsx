@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 interface PrintProgressProps {
-    state: any;
+    state: Record<string, unknown>;
 }
 export function PrintProgress({ state }: PrintProgressProps) {
     useEffect(() => {

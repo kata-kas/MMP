@@ -8,11 +8,11 @@ export function DiscoveryNotifications() {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
     const [toastId, setToastId] = useState<string | number | null>(null);
-    const [message, setMessage] = useState({} as any)
-    const [error, setError] = useState<Error | null>(null);
+    const [message, setMessage] = useState({} as Record<string, unknown>)
+    const [_error, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
-        setMessage("")
+        setMessage({} as Record<string, unknown>)
         const subscription = {
             subscriberId,
             provider: `system/events`,
@@ -30,7 +30,8 @@ export function DiscoveryNotifications() {
     useEffect(() => {
         console.log(message)
         if (!message.state) return;
-        if (message.state.state == "started") {
+        const state = message.state as Record<string, unknown>;
+        if (state?.state == "started") {
             const id = toast.loading("New Scan started", {
                 description: "Let's find new projects!",
             });

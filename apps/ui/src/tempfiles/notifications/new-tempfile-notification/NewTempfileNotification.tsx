@@ -6,8 +6,8 @@ import { Link } from "react-router-dom";
 export function NewTempfileNotification() {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
-    const [message, setMessage] = useState({} as any)
-    const [error, setError] = useState<Error | null>(null);
+    const [message, setMessage] = useState({} as Record<string, unknown>)
+    const [_error, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
         setMessage({})
@@ -28,10 +28,11 @@ export function NewTempfileNotification() {
     useEffect(() => {
         console.log(message)
         if (!message.state) return;
+        const state = message.state as Record<string, unknown>;
         toast.success(`New temp file uploaded!`, {
             description: (
                 <span>
-                    Go to <Link to={`/tempfiles`} className="underline">{message.state.name}</Link>
+                    Go to <Link to={`/tempfiles`} className="underline">{(state?.name as string)}</Link>
                 </span>
             ),
         })

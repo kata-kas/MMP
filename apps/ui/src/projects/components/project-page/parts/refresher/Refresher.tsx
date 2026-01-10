@@ -10,8 +10,8 @@ type RefresherProps = {
 export function Refresher({ projectUUID, refresh }: RefresherProps) {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
-    const [projectUpdate, setProjectUpdate] = useState({} as any)
-    const [error, setError] = useState<Error | null>(null);
+    const [projectUpdate, setProjectUpdate] = useState({} as Record<string, unknown>)
+    const [_error, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
         setProjectUpdate({})
@@ -32,7 +32,8 @@ export function Refresher({ projectUUID, refresh }: RefresherProps) {
     useEffect(() => {
         console.log(projectUpdate)
         if (!projectUpdate.state) return;
-        if (projectUpdate.state.projectUUID == projectUUID && projectUpdate.state.type == "update") {
+        const state = projectUpdate.state as Record<string, unknown>;
+        if (state?.projectUUID == projectUUID && state?.type == "update") {
             refresh();
         }
     }, [projectUpdate, projectUUID, refresh])

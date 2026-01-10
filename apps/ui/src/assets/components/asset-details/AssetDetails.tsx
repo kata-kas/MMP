@@ -44,7 +44,7 @@ export function AssetDetails({ asset }: AssetDetailsProps) {
                 <TabsContent value="properties" className="space-y-4">
                     <Input placeholder="Filter" value={propFilter} onChange={(e) => setPropFilter(e.target.value)} />
                     <ScrollArea className="h-[800px]">
-                        {Object.keys(asset.properties).filter(k => k.includes(propFilter)).map((k: any) => (
+                        {Object.keys(asset.properties).filter(k => k.includes(propFilter)).map((k: string) => (
                             <div key={k} className="flex gap-2 mt-2">
                                 <Input disabled value={k} className="flex-1" />
                                 <Input disabled value={asset.properties[k]} className="flex-1" />

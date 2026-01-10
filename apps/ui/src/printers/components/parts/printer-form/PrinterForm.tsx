@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 
 type PrinterFormProps = {
     printer?: Printer
-    onPrinterChange: (p: any) => void
+    onPrinterChange: (p: Printer) => void
 }
 
 export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
@@ -34,7 +34,7 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
         form.reset(printer)
     }, [printer, form])
     
-    const onSave = (data: any) => {
+    const onSave = (data: Printer) => {
         const url = `${settings.localBackend}/printers${printer?.uuid ? '/' + printer.uuid : ''}`
         executeSave({
             url,

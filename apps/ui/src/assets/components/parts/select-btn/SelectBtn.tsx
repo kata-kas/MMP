@@ -6,11 +6,11 @@ import React, { ReactElement } from "react";
 type SelectBtnProps = {
     selected: boolean;
     onChange: (arg0: boolean) => void;
-    icon?: ReactElement<any>
+    icon?: ReactElement;
 }
 
 export function SelectBtn({ selected, onChange, icon }: SelectBtnProps) {
-    const iconClone = React.cloneElement(icon || <Icon3dRotate/>, {
+    const iconClone = React.cloneElement(icon || <Icon3dRotate />, {
         className: "h-5 w-5",
         stroke: 1.5
     })

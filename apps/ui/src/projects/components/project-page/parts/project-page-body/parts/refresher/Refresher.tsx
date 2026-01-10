@@ -11,8 +11,8 @@ type RefresherProps = {
 export function Refresher({ projectUUID }: RefresherProps) {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
-    const [assetUpdate, setAssetUpdate] = useState({} as any)
-    const [error, setError] = useState<Error | null>(null);
+    const [assetUpdate, setAssetUpdate] = useState({} as Record<string, unknown>)
+    const [_error, setError] = useState<Error | null>(null);
     useEffect(() => {
         if (!connected) return;
         setAssetUpdate({})
@@ -33,7 +33,8 @@ export function Refresher({ projectUUID }: RefresherProps) {
     useEffect(() => {
         console.log(assetUpdate)
         if (!assetUpdate.state) return;
-        if (projectUUID == assetUpdate.state.projectUUID) {
+        const state = assetUpdate.state as Record<string, unknown>;
+        if (projectUUID == state?.projectUUID) {
             toast.info(`Assets have changed`, {
                 description: (
                     <Link to={`/projects/${projectUUID}`} className="underline" reloadDocument>

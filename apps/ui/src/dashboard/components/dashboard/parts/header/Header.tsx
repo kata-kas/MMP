@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { DashboardItem, Widget, WidgetType } from "@/dashboard/entities/WidgetType";
+import { DashboardItem, WidgetType } from "@/dashboard/entities/WidgetType";
 import { dashboardContext } from "@/dashboard/provider/DashboardContext";
 import React, { useCallback, useContext, useState } from "react";
 import { IconLock, IconLockOpen, IconPlus, IconSettings, IconSettingsOff } from "@tabler/icons-react";
@@ -17,7 +17,7 @@ interface HeaderProps {
 export function Header({ addItem, locked, toggleLock, edit, toggleEdit }: HeaderProps) {
     const { widgetTypes } = useContext(dashboardContext)
     const [opened, setOpened] = useState(false);
-    const [config, setConfig] = useState<any>({});
+    const [config, setConfig] = useState<Record<string, unknown>>({});
     const [selectedType, setSelectedType] = useState<WidgetType | undefined>();
 
     const addWidget = useCallback(() => {
@@ -39,7 +39,7 @@ export function Header({ addItem, locked, toggleLock, edit, toggleEdit }: Header
 
     const reset = () => {
         setSelectedType(undefined)
-        setConfig({})
+        setConfig({} as Record<string, unknown>)
     }
 
     return (<>
