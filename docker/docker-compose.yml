@@ -3,7 +3,7 @@ services:
     image: mmp:test
     container_name: mmp
     volumes:
-      - ./library:/library
+      - ../apps/agent/testdata:/library
       - ./data:/data
       - ./config.toml:/app/config.toml
     ports:
