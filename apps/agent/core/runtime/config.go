@@ -1,12 +1,15 @@
 package runtime
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	"github.com/BurntSushi/toml"
+	"github.com/eduardooliveira/stLib/core/logger"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/spf13/viper"
 )
@@ -42,7 +45,15 @@ var Cfg *Config
 
 var dataPath = "/data"
 
+var initErr error
+
 func init() {
+	defer func() {
+		if r := recover(); r != nil {
+			initErr = fmt.Errorf("config initialization panic: %v", r)
+		}
+	}()
+
 	viper.BindEnv("DATA_PATH")
 	if viper.GetString("DATA_PATH") != "" {
 		dataPath = viper.GetString("DATA_PATH")
@@ -50,7 +61,8 @@ func init() {
 	if _, err := os.Stat(dataPath); os.IsNotExist(err) {
 		err := os.MkdirAll(dataPath, os.ModePerm)
 		if err != nil {
-			log.Panic(err)
+			initErr = fmt.Errorf("failed to create data directory: %w", err)
+			return
 		}
 	}
 
@@ -91,7 +103,7 @@ func init() {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Debug("config file read error", zap.Error(err))
 	}
 
 	cfg := &Config{}
@@ -105,7 +117,7 @@ func init() {
 
 	configExists := true
 	if _, err := os.Stat(path.Join(dataPath, "config.toml")); os.IsNotExist(err) {
-		log.Println("config.toml not found, creating...")
+		logger.GetLogger().Info("config.toml not found, creating...")
 		configExists = false
 	}
 
@@ -130,17 +142,25 @@ func GetDataPath() string {
 	return dataPath
 }
 
+func GetInitError() error {
+	return initErr
+}
+
 func SaveConfig(cfg *Config) error {
 	f, err := os.OpenFile(filepath.Join(GetDataPath(), "config.toml"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to open config file", zap.Error(err))
+		return err
 	}
 	if err := toml.NewEncoder(f).Encode(cfg); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to encode config", zap.Error(err))
+		f.Close()
+		return err
 	}
 	if err := f.Close(); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to close config file", zap.Error(err))
+		return err
 	}
 	Cfg = cfg
-	return err
+	return nil
 }

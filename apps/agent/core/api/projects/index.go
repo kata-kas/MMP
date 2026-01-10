@@ -2,12 +2,14 @@ package projects
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/labstack/echo/v4"
 	"github.com/morkid/paginate"
 )
@@ -33,7 +35,7 @@ func index(c echo.Context) error {
 	q.Order("name ASC")
 	page := pg.With(q).Request(c.Request()).Response(&[]entities.Project{})
 	if page.RawError != nil {
-		log.Println(page.RawError)
+		logger.GetLogger().Error("pagination error", zap.Error(page.RawError))
 		return echo.NewHTTPError(http.StatusInternalServerError, page.RawError.Error())
 	}
 	return c.JSON(http.StatusOK, page)

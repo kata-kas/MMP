@@ -3,13 +3,15 @@ package assets
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/downloader/tools"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/initialization"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/utils"
@@ -27,14 +29,14 @@ func New(c echo.Context) error {
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to parse multipart form", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	files := form.File["files"]
 
 	if len(files) == 0 {
-		log.Println("No files")
+		logger.GetLogger().Warn("no files in upload request")
 		return c.NoContent(http.StatusBadRequest)
 	}
 
@@ -43,7 +45,7 @@ func New(c echo.Context) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("uuid", pAsset.ProjectUUID), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -51,12 +53,12 @@ func New(c echo.Context) error {
 
 	src, err := files[0].Open()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to open uploaded file", zap.String("filename", files[0].Filename), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	defer src.Close()
 	if err = tools.SaveFile(filepath.Join(path, files[0].Filename), src); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to save file", zap.String("path", path), zap.String("filename", files[0].Filename), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -67,7 +69,7 @@ func New(c echo.Context) error {
 	}).Init()
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to initialize asset", zap.String("filename", files[0].Filename), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

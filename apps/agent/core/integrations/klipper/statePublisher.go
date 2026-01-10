@@ -3,14 +3,16 @@ package klipper
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"github.com/duke-git/lancet/v2/maputil"
 	models "github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/events"
 	printerModels "github.com/eduardooliveira/stLib/core/integrations/models"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/gorilla/websocket"
 )
 
@@ -35,17 +37,17 @@ func GetStatePublisher(printer *models.Printer) *statePublisher {
 func (p *statePublisher) Start() error {
 	u, err := url.Parse(p.printer.Address)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to parse printer address", zap.String("address", p.printer.Address), zap.Error(err))
 		return err
 	}
 
 	u.Scheme = "ws"
 	u.Path = "/websocket"
 
-	log.Printf("connecting to %s", u.String())
+	logger.GetLogger().Info("connecting to klipper", zap.String("url", u.String()))
 	p.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to dial websocket", zap.String("url", u.String()), zap.Error(err))
 		return err
 	}
 	p.conn.WriteMessage(websocket.TextMessage, []byte("{\"jsonrpc\":\"2.0\",\"method\":\"printer.objects.subscribe\",\"params\":{\"objects\":{\"heaters\":null,\"idle_timeout\":null,\"print_stats\":null,\"display_status\":null,\"heater_bed\":null,\"fan\":null,\"heater_fan toolhead_cooling_fan\":null,\"extruder\":null}},\"id\":1}"))
@@ -65,8 +67,7 @@ func (p *statePublisher) Read() chan *events.Message {
 			default:
 				_, message, err := p.conn.ReadMessage()
 				if err != nil {
-					log.Println("read:", err)
-					//TODO: implement reconnect
+					logger.GetLogger().Error("websocket read error", zap.String("printer_uuid", p.printer.UUID), zap.Error(err))
 					close(rtn)
 					return
 				}
@@ -77,28 +78,25 @@ func (p *statePublisher) Read() chan *events.Message {
 					continue
 				}
 
-				//log.Println(p.printer.Name, "status update:", kpStatusString)
-
 				if strings.Contains(kpStatusString, "notify_status_update") {
-					//log.Println(p.printer.Name, "status update:", kpStatusString)
 					select {
 					case rtn <- &events.Message{
 						Event: eventName,
 						Data:  p.parseNotifyStatusUpdate(message),
 					}:
 					default:
-						log.Println("status update channel full")
+						logger.GetLogger().Warn("status update channel full", zap.String("printer_uuid", p.printer.UUID))
 					}
 				}
 				if strings.Contains(kpStatusString, "result") {
-					log.Println(p.printer.Name, "status update:", kpStatusString)
+					logger.GetLogger().Debug("klipper status update", zap.String("printer_uuid", p.printer.UUID))
 					select {
 					case rtn <- &events.Message{
 						Event: eventName,
 						Data:  p.parseResult(message),
 					}:
 					default:
-						log.Println("status update channel full")
+						logger.GetLogger().Warn("status update channel full", zap.String("printer_uuid", p.printer.UUID))
 					}
 				}
 			}
@@ -114,7 +112,7 @@ func (p *statePublisher) OnNewSub() error {
 }
 
 func (p *statePublisher) Stop() error {
-	log.Println("state publisher Stop")
+	logger.GetLogger().Debug("stopping state publisher", zap.String("printer_uuid", p.printer.UUID))
 	p.done <- struct{}{}
 	p.conn.Close()
 	return nil
@@ -188,7 +186,7 @@ func (p *statePublisher) parseNotifyStatusUpdate(message []byte) []*models.Print
 	var kpStatusUpdate *statusUpdate
 	err := json.Unmarshal(message, &kpStatusUpdate)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to parse notify status update", zap.String("printer_uuid", p.printer.UUID), zap.Error(err))
 		return nil
 	}
 
@@ -207,7 +205,7 @@ func (p *statePublisher) parseResult(message []byte) []*models.PrinterStatus {
 	var pkResult *result
 	err := json.Unmarshal(message, &pkResult)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to parse result", zap.String("printer_uuid", p.printer.UUID), zap.Error(err))
 		return nil
 	}
 

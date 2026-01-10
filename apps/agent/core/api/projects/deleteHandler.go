@@ -2,11 +2,13 @@ package projects
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -25,7 +27,7 @@ func deleteHandler(c echo.Context) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("uuid", uuid), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

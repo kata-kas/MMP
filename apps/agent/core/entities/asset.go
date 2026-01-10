@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"mime"
 	"os"
 	"path"
@@ -14,6 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 )
 
@@ -69,7 +71,7 @@ func NewProjectAsset2(fileName string, label string, project *Project, origin st
 	var err error
 	file, err := os.Open(fullFilePath)
 	if err != nil {
-		log.Println("failed to open file", err)
+		logger.GetLogger().Error("failed to open file", zap.String("file_path", fullFilePath), zap.Error(err))
 		return nil, err
 	}
 	defer file.Close()

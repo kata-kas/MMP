@@ -6,13 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
 	models "github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 )
 
@@ -49,7 +51,7 @@ func (p *OctoPrintPrinter) ServerFilesUpload(asset *models.ProjectAsset) error {
 	project, err := database.GetProject(asset.ProjectUUID)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("project_uuid", asset.ProjectUUID), zap.Error(err))
 		return err
 	}
 

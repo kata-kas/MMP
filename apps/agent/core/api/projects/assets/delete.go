@@ -3,13 +3,15 @@ package assets
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -28,13 +30,13 @@ func Delete(c echo.Context) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		log.Println(err)
+		logger.GetLogger().Error("failed to get asset", zap.String("id", id), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	project, err := database.GetProject(c.Param("uuid"))
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("uuid", c.Param("uuid")), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

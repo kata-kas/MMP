@@ -3,11 +3,13 @@ package enrichment
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path"
 
+	"go.uber.org/zap"
+
 	"github.com/Maker-Management-Platform/fauxgl"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/runtime"
 	"github.com/eduardooliveira/stLib/core/system"
@@ -59,7 +61,7 @@ func (s *stlRenderer) Render(job types.ProcessableAsset) (string, error) {
 
 	mesh, err := fauxgl.LoadSTL(utils.ToLibPath(path.Join(job.Project.FullPath(), job.Asset.Name)))
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to load STL file", zap.String("name", job.Asset.Name), zap.Error(err))
 		return "", err
 	}
 

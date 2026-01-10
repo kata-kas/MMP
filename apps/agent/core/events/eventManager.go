@@ -2,8 +2,11 @@ package events
 
 import (
 	"errors"
-	"log"
 	"sync"
+
+	"go.uber.org/zap"
+
+	"github.com/eduardooliveira/stLib/core/logger"
 )
 
 type session struct {
@@ -67,7 +70,7 @@ func Subscribe(sessionId string, topic string, publisher Publisher) error {
 
 	sess, ok := state.sessions[sessionId]
 	if !ok {
-		log.Println("session not found :", sessionId)
+		logger.GetLogger().Warn("session not found", zap.String("session_id", sessionId))
 		return errors.New("session not found")
 	}
 
@@ -75,7 +78,7 @@ func Subscribe(sessionId string, topic string, publisher Publisher) error {
 	if !ok {
 		err := publisher.Start()
 		if err != nil {
-			log.Println("failed to start topic :", topic)
+			logger.GetLogger().Error("failed to start topic publisher", zap.String("topic", topic), zap.Error(err))
 			return err
 		}
 		state.publishers[topic] = publisher
@@ -113,7 +116,7 @@ func UnSubscribe(sessionId string, topic string) {
 		pub, ok := state.publishers[topic]
 		if ok {
 			if err := pub.Stop(); err != nil {
-				log.Println("failed to stop publisher :", topic)
+				logger.GetLogger().Error("failed to stop publisher", zap.String("topic", topic), zap.Error(err))
 			}
 			delete(state.publishers, topic)
 		}
@@ -123,7 +126,7 @@ func UnSubscribe(sessionId string, topic string) {
 func runSubscription(topic string) {
 	publisher, ok := state.publishers[topic]
 	if !ok {
-		log.Println("publisher not found :", topic)
+		logger.GetLogger().Warn("publisher not found", zap.String("topic", topic))
 		return
 	}
 	for msg := range publisher.Read() {
@@ -136,11 +139,10 @@ func runSubscription(topic string) {
 		}
 
 		if subCount == 0 {
-			log.Println("no subscribers found for topic :", topic)
-			log.Println("publisher stopped :", topic)
+			logger.GetLogger().Info("no subscribers found for topic, stopping publisher", zap.String("topic", topic))
 			err := publisher.Stop()
 			if err != nil {
-				log.Println("failed to stop publisher :", topic)
+				logger.GetLogger().Error("failed to stop publisher", zap.String("topic", topic), zap.Error(err))
 			}
 			return
 		}

@@ -1,6 +1,9 @@
 package queue
 
-import "log"
+import (
+	"github.com/eduardooliveira/stLib/core/logger"
+	"go.uber.org/zap"
+)
 
 type Job interface {
 	JobName() string
@@ -14,12 +17,18 @@ func init() {
 		for {
 			job := <-queue
 			job.JobAction()
-			log.Println("job queue size: ", len(queue), " - ", job.JobName())
+			logger.GetLogger().Debug("job completed",
+				zap.Int("queue_size", len(queue)),
+				zap.String("job_name", job.JobName()),
+			)
 		}
 	}()
 }
 
 func Enqueue(job Job) {
 	queue <- job
-	log.Println("job queue size: ", len(queue), " + ", job.JobName())
+	logger.GetLogger().Debug("job enqueued",
+		zap.Int("queue_size", len(queue)),
+		zap.String("job_name", job.JobName()),
+	)
 }

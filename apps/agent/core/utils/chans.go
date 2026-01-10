@@ -1,8 +1,11 @@
 package utils
 
 import (
-	"log/slog"
 	"sync"
+
+	"go.uber.org/zap"
+
+	"github.com/eduardooliveira/stLib/core/logger"
 )
 
 func MergeWait[T any](cs ...<-chan T) <-chan T {
@@ -28,7 +31,7 @@ func MergeWait[T any](cs ...<-chan T) <-chan T {
 func MergePump[T any](out chan T, chans ...<-chan T) {
 	o := MergeWait(chans...)
 	for v := range o {
-		slog.Debug("Merging", v)
+		logger.GetLogger().Debug("merging channel value", zap.Any("value", v))
 		out <- v
 	}
 }

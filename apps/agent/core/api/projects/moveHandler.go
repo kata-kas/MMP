@@ -2,14 +2,15 @@ package projects
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"path/filepath"
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +18,7 @@ func moveHandler(c echo.Context) error {
 	pproject := &entities.Project{}
 
 	if err := c.Bind(pproject); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to bind project", zap.Error(err))
 		return c.NoContent(http.StatusBadRequest)
 	}
 
@@ -30,7 +31,7 @@ func moveHandler(c echo.Context) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("uuid", pproject.UUID), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -39,7 +40,7 @@ func moveHandler(c echo.Context) error {
 	err = utils.Move(project.FullPath(), pproject.FullPath(), true)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to move project", zap.String("from", project.FullPath()), zap.String("to", pproject.FullPath()), zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
@@ -48,7 +49,7 @@ func moveHandler(c echo.Context) error {
 	err = database.UpdateProject(project)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to update project", zap.String("uuid", project.UUID), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

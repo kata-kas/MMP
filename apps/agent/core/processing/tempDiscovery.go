@@ -2,11 +2,12 @@ package processing
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	models "github.com/eduardooliveira/stLib/core/entities"
@@ -14,20 +15,20 @@ import (
 	"github.com/eduardooliveira/stLib/core/state"
 )
 
-func RunTempDiscovery() {
-	log.Println("Discovering Temp files")
+func RunTempDiscovery(logger *zap.Logger) error {
+	logger.Info("discovering temp files")
 
 	tempPath := filepath.Clean(path.Join(runtime.GetDataPath(), "temp"))
 	if _, err := os.Stat(tempPath); os.IsNotExist(err) {
 		err := os.MkdirAll(tempPath, os.ModePerm)
 		if err != nil {
-			log.Panic(err)
+			return fmt.Errorf("failed to create temp directory: %w", err)
 		}
 	}
 
 	entries, err := os.ReadDir(tempPath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to read temp directory: %w", err)
 	}
 
 	for _, e := range entries {
@@ -41,17 +42,19 @@ func RunTempDiscovery() {
 		if blacklisted {
 			continue
 		}
-		fmt.Println(e.Name())
-		tempFile, err := DiscoverTempFile(e.Name())
+		logger.Debug("discovering temp file", zap.String("name", e.Name()))
+		tempFile, err := DiscoverTempFile(e.Name(), logger)
 		if err != nil {
-			log.Println("Error Discovering temp file: ", err)
+			logger.Warn("error discovering temp file", zap.String("name", e.Name()), zap.Error(err))
 			continue
 		}
 		state.TempFiles[tempFile.UUID] = tempFile
 	}
+
+	return nil
 }
 
-func DiscoverTempFile(name string) (*models.TempFile, error) {
+func DiscoverTempFile(name string, logger *zap.Logger) (*models.TempFile, error) {
 	tempFile, err := models.NewTempFile(name)
 	if err != nil {
 		return nil, err
@@ -61,7 +64,7 @@ func DiscoverTempFile(name string) (*models.TempFile, error) {
 
 	projects, err := database.GetProjects()
 	if err != nil {
-		log.Println(err)
+		logger.Error("failed to get projects", zap.Error(err))
 		return nil, err
 	}
 

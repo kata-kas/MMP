@@ -1,12 +1,14 @@
 package state
 
 import (
-	"log"
 	"os"
 	"path"
 
+	"go.uber.org/zap"
+
 	"github.com/BurntSushi/toml"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/runtime"
 )
 
@@ -20,15 +22,19 @@ var assetTypesFile string
 func PersistPrinters() error {
 	f, err := os.OpenFile(printersFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to open printers file", zap.Error(err))
+		return err
 	}
 	if err := toml.NewEncoder(f).Encode(Printers); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to encode printers", zap.Error(err))
+		f.Close()
+		return err
 	}
 	if err := f.Close(); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to close printers file", zap.Error(err))
+		return err
 	}
-	return err
+	return nil
 }
 
 func LoadPrinters() error {
@@ -44,7 +50,7 @@ func LoadPrinters() error {
 
 	_, err = toml.DecodeFile(printersFile, &Printers)
 	if err != nil {
-		log.Println("error loading printers")
+		logger.GetLogger().Warn("error loading printers", zap.Error(err))
 	}
 	return err
 }
@@ -62,7 +68,7 @@ func LoadAssetTypes() error {
 
 	_, err = toml.DecodeFile(assetTypesFile, &AssetTypes)
 	if err != nil {
-		log.Println("error loading asset types")
+		logger.GetLogger().Warn("error loading asset types", zap.Error(err))
 	}
 
 	if len(AssetTypes) == 0 {
@@ -92,13 +98,17 @@ func LoadAssetTypes() error {
 		}
 		f, err := os.OpenFile(assetTypesFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Error("failed to open asset types file", zap.Error(err))
+			return err
 		}
 		if err := toml.NewEncoder(f).Encode(AssetTypes); err != nil {
-			log.Println(err)
+			logger.GetLogger().Error("failed to encode asset types", zap.Error(err))
+			f.Close()
+			return err
 		}
 		if err := f.Close(); err != nil {
-			log.Println(err)
+			logger.GetLogger().Error("failed to close asset types file", zap.Error(err))
+			return err
 		}
 	}
 

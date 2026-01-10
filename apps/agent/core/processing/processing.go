@@ -2,9 +2,11 @@ package processing
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/processing/discovery"
@@ -30,12 +32,12 @@ func (p *ProcessableAsset) GetAsset() *entities.ProjectAsset {
 	return p.Asset
 }
 
-func ProcessFolder(ctx context.Context, root string) error {
-	tempPath := filepath.Clean(filepath.Join(runtime.GetDataPath(), "assets")) //TODO: move this elsewhere
+func ProcessFolder(ctx context.Context, root string, logger *zap.Logger) error {
+	tempPath := filepath.Clean(filepath.Join(runtime.GetDataPath(), "assets"))
 	if _, err := os.Stat(tempPath); os.IsNotExist(err) {
 		err := os.MkdirAll(tempPath, os.ModePerm)
 		if err != nil {
-			log.Panic(err)
+			return fmt.Errorf("failed to create assets directory: %w", err)
 		}
 	}
 	projects, err := discovery.DeepProjectDiscoverer{}.Discover(root)
@@ -59,7 +61,10 @@ func ProcessFolder(ctx context.Context, root string) error {
 
 	for _, out := range outs {
 		for p := range out {
-			log.Println(p)
+			logger.Debug("processed project",
+				zap.String("name", p.Name),
+				zap.String("path", p.Path),
+			)
 		}
 	}
 

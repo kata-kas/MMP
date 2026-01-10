@@ -1,9 +1,10 @@
 package system
 
 import (
-	"log"
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/events"
+	"github.com/eduardooliveira/stLib/core/logger"
 )
 
 type systemEvent struct {
@@ -35,9 +36,9 @@ func (em *eventManagement) Read() chan *events.Message {
 				Event: eventName,
 				Data:  m,
 			}:
-				log.Println("event sent")
+				logger.GetLogger().Debug("system event sent", zap.String("event_name", eventName))
 			default:
-				log.Println("status update channel full")
+				logger.GetLogger().Warn("system event channel full", zap.String("event_name", eventName))
 			}
 		}
 	}()
@@ -64,6 +65,6 @@ func Publish(name string, data any) {
 		State: data,
 	}:
 	default:
-		log.Println("dropped system event")
+		logger.GetLogger().Warn("dropped system event", zap.String("event_name", name))
 	}
 }

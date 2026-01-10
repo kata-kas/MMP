@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/integrations/octorpint"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/events"
 	"github.com/eduardooliveira/stLib/core/integrations/klipper"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/state"
 	"github.com/labstack/echo/v4"
 )
@@ -66,7 +68,7 @@ func sendHandler(c echo.Context) error {
 	asset, err := database.GetAsset(id)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to get asset", zap.String("id", id), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -79,7 +81,7 @@ func sendHandler(c echo.Context) error {
 	}
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to upload file to printer", zap.String("printer_uuid", uuid), zap.String("asset_id", id), zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
@@ -173,7 +175,7 @@ func edit(c echo.Context) error {
 	pPrinter := &entities.Printer{}
 
 	if err := c.Bind(pPrinter); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to bind printer", zap.Error(err))
 		return c.NoContent(http.StatusBadRequest)
 	}
 
@@ -209,11 +211,15 @@ func testConnection(c echo.Context) error {
 
 	if pPrinter.Type == "klipper" {
 		err = klipper.ConnectionStatus(pPrinter)
-		log.Println(err)
+		if err != nil {
+			logger.GetLogger().Warn("klipper connection test error", zap.String("address", pPrinter.Address), zap.Error(err))
+		}
 		return c.JSON(http.StatusOK, pPrinter)
 	} else if pPrinter.Type == "octoPrint" {
 		err = octorpint.ConnectionStatus(pPrinter)
-		log.Println(err)
+		if err != nil {
+			logger.GetLogger().Warn("octoprint connection test error", zap.String("address", pPrinter.Address), zap.Error(err))
+		}
 		return c.JSON(http.StatusOK, pPrinter)
 	}
 
@@ -246,7 +252,7 @@ func statusHandler(c echo.Context) error {
 				return nil
 			case s, ok := <-stateChan:
 				if !ok {
-					log.Println("State chan closed, closing client")
+					logger.GetLogger().Debug("state channel closed, closing client", zap.String("printer_uuid", uuid))
 					return nil
 				}
 				c.Response().Write([]byte("id: "))

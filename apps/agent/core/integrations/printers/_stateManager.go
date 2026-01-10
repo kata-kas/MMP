@@ -1,12 +1,12 @@
 package printers
 
 import (
-	"log"
-
 	"github.com/duke-git/lancet/v2/maputil"
 	models "github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/integrations/klipper"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Publisher interface {
@@ -31,18 +31,18 @@ type subscriber struct {
 }
 
 func (s *stateManager) managerRoutine() {
-	defer log.Println(s.printer.Name, " managerRoutine Goodbye")
+	defer logger.GetLogger().Debug("manager routine goodbye", zap.String("printer_name", s.printer.Name))
 	for {
 		select {
 
 		case sub := <-s.sub:
 			s.subscribers.Set(sub.id, sub)
 			go s.publisher.OnNewSub()
-			log.Println(s.printer.Name, " +Subs")
+			logger.GetLogger().Debug("subscriber added", zap.String("printer_name", s.printer.Name))
 
 		case id := <-s.unSub:
 			s.subscribers.Delete(id)
-			log.Println(s.printer.Name, " -Subs")
+			logger.GetLogger().Debug("subscriber removed", zap.String("printer_name", s.printer.Name))
 			len := 0
 			s.subscribers.Range(func(_ string, _ *subscriber) bool {
 				len++
@@ -73,7 +73,7 @@ func (s *stateManager) managerRoutine() {
 					select {
 					case sub.status <- status:
 					default:
-						log.Println(s.printer.Name, " broadcasterRoutine status chan full")
+						logger.GetLogger().Warn("status channel full", zap.String("printer_name", s.printer.Name))
 					}
 					return true
 				})

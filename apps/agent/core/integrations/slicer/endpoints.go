@@ -3,11 +3,13 @@ package slicer
 import (
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
 
+	"go.uber.org/zap"
+
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing"
 	"github.com/eduardooliveira/stLib/core/runtime"
 	"github.com/eduardooliveira/stLib/core/state"
@@ -54,14 +56,14 @@ func upload(c echo.Context) error {
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to parse multipart form", zap.Error(err))
 		return c.NoContent(http.StatusBadRequest)
 	}
 
 	files := form.File["file"]
 
 	if len(files) == 0 {
-		log.Println("No files")
+		logger.GetLogger().Warn("no files in upload request")
 		return c.NoContent(http.StatusBadRequest)
 	}
 	name := files[0].Filename
@@ -71,31 +73,30 @@ func upload(c echo.Context) error {
 		isNewFile = true
 	}
 
-	// Source
 	src, err := files[0].Open()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to open uploaded file", zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer src.Close()
 
-	// Destination
 	dst, err := os.Create(path.Join(runtime.GetDataPath(), "temp", name))
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to create destination file", zap.String("name", name), zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	defer dst.Close()
 
-	// Copy
 	if _, err = io.Copy(dst, src); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to copy file", zap.String("name", name), zap.Error(err))
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	if isNewFile {
-		tempFile, _ := processing.DiscoverTempFile(name)
-		state.TempFiles[tempFile.UUID] = tempFile
+		tempFile, _ := processing.DiscoverTempFile(name, logger.GetLogger())
+		if tempFile != nil {
+			state.TempFiles[tempFile.UUID] = tempFile
+		}
 	}
 
 	system.Publish("tempfile.new", map[string]any{"name": name})

@@ -4,15 +4,16 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/state"
 	"github.com/eduardooliveira/stLib/core/utils"
+	"go.uber.org/zap"
 )
 
 type mfExtractor struct{}
@@ -28,7 +29,7 @@ func (me *mfExtractor) Extract(e types.ProcessableAsset) ([]*Extracted, error) {
 
 	archive, err := zip.OpenReader(path)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to open 3MF archive", zap.String("path", path), zap.Error(err))
 		return nil, err
 	}
 	defer archive.Close()
@@ -37,32 +38,30 @@ func (me *mfExtractor) Extract(e types.ProcessableAsset) ([]*Extracted, error) {
 
 	for i, f := range archive.File {
 		ext := filepath.Ext(f.Name)
-		// Only allow image files the platform supports
 		if !slices.Contains(state.AssetTypes["image"].Extensions, ext) {
 			continue
 		}
 
-		// Ignore thumbnail since we should have the original image already
 		if strings.Contains(f.Name, ".thumbnails/") {
 			continue
 		}
 		dstName := fmt.Sprintf("%s%d%s", baseName, i, ext)
 		dstFile, err := os.OpenFile(utils.ToAssetsPath(e.Asset.ProjectUUID, dstName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Warn("failed to create destination file", zap.String("dst_name", dstName), zap.Error(err))
 			continue
 		}
 		defer dstFile.Close()
 
 		fileInArchive, err := f.Open()
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Warn("failed to open file in archive", zap.String("file_name", f.Name), zap.Error(err))
 			continue
 		}
 		defer fileInArchive.Close()
 
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			log.Println(err)
+			logger.GetLogger().Warn("failed to copy file from archive", zap.String("file_name", f.Name), zap.Error(err))
 			continue
 		}
 		rtn = append(rtn, &Extracted{

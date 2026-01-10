@@ -2,9 +2,11 @@ package enrichment
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 )
 
@@ -75,7 +77,7 @@ func EnrichAsset(ctx context.Context, p *types.ProcessableAsset) ([]*types.Proce
 	if ps, ok := parsers[p.Asset.Extension]; ok {
 		for _, parser := range ps {
 			if err := parser.Parse(*p); err != nil {
-				log.Println(err)
+				logger.GetLogger().Warn("parser error", zap.String("extension", p.Asset.Extension), zap.String("name", p.Asset.Name), zap.Error(err))
 			}
 		}
 	}

@@ -10,8 +10,11 @@ import (
 	"sort"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/events"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing"
 	"github.com/eduardooliveira/stLib/core/runtime"
 	"github.com/eduardooliveira/stLib/core/system"
@@ -69,9 +72,9 @@ func saveSettings(c echo.Context) error {
 
 func runDiscovery(c echo.Context) error {
 	go func() {
-		err := processing.ProcessFolder(context.Background(), runtime.Cfg.Library.Path)
+		err := processing.ProcessFolder(context.Background(), runtime.Cfg.Library.Path, logger.GetLogger())
 		if err != nil {
-			fmt.Println(err)
+			logger.GetLogger().Error("discovery error", zap.Error(err))
 		}
 	}()
 	return c.NoContent(http.StatusOK)

@@ -5,16 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/downloader/tools"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/runtime"
 	"github.com/eduardooliveira/stLib/core/utils"
@@ -35,7 +37,7 @@ func Fetch(url string) error {
 	}
 
 	id := matches[1]
-	log.Println("Processing thing: ", id)
+	logger.GetLogger().Info("processing thingiverse thing", zap.String("thing_id", id))
 
 	httpClient := &http.Client{}
 
@@ -51,12 +53,12 @@ func Fetch(url string) error {
 	}
 
 	if err = utils.CreateFolder(utils.ToLibPath(project.FullPath())); err != nil {
-		log.Println("error creating project folder")
+		logger.GetLogger().Error("error creating project folder", zap.String("path", project.FullPath()), zap.Error(err))
 		return err
 	}
 
 	if err = utils.CreateAssetsFolder(project.UUID); err != nil {
-		log.Println("error creating assets folder")
+		logger.GetLogger().Error("error creating assets folder", zap.String("project_uuid", project.UUID), zap.Error(err))
 		return err
 	}
 	eg := errgroup.Group{}
@@ -118,7 +120,7 @@ func fetchDetails(id string, project *entities.Project, httpClient *http.Client)
 		project.Tags = append(project.Tags, entities.StringToTag(tag.Name))
 	}
 
-	log.Println("Downloading details for thing: ", thing.Name)
+	logger.GetLogger().Info("downloading thingiverse details", zap.String("thing_name", thing.Name), zap.String("thing_id", id))
 
 	return nil
 }
@@ -155,7 +157,7 @@ func fetchFiles(id string, project *entities.Project, httpClient *http.Client) (
 		eg.Go(runner)
 	}
 
-	log.Printf("Downloaded %d files\n", len(files))
+	logger.GetLogger().Info("downloading thingiverse files", zap.Int("file_count", len(files)), zap.String("thing_id", id))
 
 	return utils.MergeSliceWait(outChans...), eg.Wait()
 }
@@ -200,7 +202,7 @@ func fetchImages(id string, project *entities.Project, httpClient *http.Client) 
 
 	}
 
-	log.Printf("Downloaded %d images\n", len(tImages))
+	logger.GetLogger().Info("downloading thingiverse images", zap.Int("image_count", len(tImages)), zap.String("thing_id", id))
 
 	return utils.MergeSliceWait(outChans...), eg.Wait()
 }

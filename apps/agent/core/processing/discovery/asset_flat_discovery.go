@@ -2,9 +2,11 @@ package discovery
 
 import (
 	"errors"
-	"log"
 	"os"
 
+	"go.uber.org/zap"
+
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/utils"
 )
@@ -18,7 +20,7 @@ func (FlatAssetDiscoverer) Discover(root string) ([]*types.ProcessableAsset, err
 
 	entries, err := os.ReadDir(projectPath)
 	if err != nil {
-		log.Println("failed to read path", projectPath)
+		logger.GetLogger().Error("failed to read project path", zap.String("path", projectPath), zap.Error(err))
 		return nil, err
 	}
 	dAssets := make([]*types.ProcessableAsset, 0)

@@ -1,14 +1,16 @@
 package tempfiles
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/eduardooliveira/stLib/core/data/database"
 	models "github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/initialization"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/runtime"
@@ -37,7 +39,7 @@ func move(c echo.Context) error {
 	tempFile := &models.TempFile{}
 
 	if err := c.Bind(tempFile); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to bind temp file", zap.Error(err))
 		return c.NoContent(http.StatusBadRequest)
 	}
 
@@ -48,7 +50,7 @@ func move(c echo.Context) error {
 	project, err := database.GetProject(tempFile.ProjectUUID)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("uuid", tempFile.ProjectUUID), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -57,7 +59,7 @@ func move(c echo.Context) error {
 	err = utils.Move(filepath.Clean(filepath.Join(runtime.GetDataPath(), "temp", tempFile.Name)), dst, false)
 
 	if err != nil {
-		log.Println("Error moving temp file: ", err)
+		logger.GetLogger().Error("error moving temp file", zap.String("uuid", uuid), zap.String("name", tempFile.Name), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -68,7 +70,7 @@ func move(c echo.Context) error {
 	}).Init()
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to initialize asset from temp file", zap.String("uuid", uuid), zap.String("name", tempFile.Name), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

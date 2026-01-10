@@ -3,12 +3,14 @@ package tools
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/initialization"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/utils"
@@ -21,7 +23,7 @@ func DownloadAsset(name string, project *entities.Project, client *http.Client, 
 	}
 	defer out.Close()
 
-	log.Println("Downloading: ", name)
+	logger.GetLogger().Info("downloading asset", zap.String("name", name), zap.String("project_uuid", project.UUID))
 
 	resp, err := client.Do(req)
 	if err != nil {

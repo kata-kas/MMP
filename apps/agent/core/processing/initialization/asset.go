@@ -2,13 +2,14 @@ package initialization
 
 import (
 	"context"
-	"log"
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/enrichment"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/state"
+	"go.uber.org/zap"
 )
 
 type AssetIniter struct {
@@ -29,19 +30,19 @@ func (ai *AssetIniter) Init() ([]*types.ProcessableAsset, error) {
 	} else {
 		ai.pa.Asset, err = entities.NewProjectAsset2(ai.pa.Name, ai.pa.Label, ai.pa.Project, ai.pa.Origin)
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Error("failed to create project asset", zap.String("name", ai.pa.Name), zap.Error(err))
 			return nil, err
 		}
 	}
 
 	if err := ai.processType(); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to process asset type", zap.String("name", ai.pa.Name), zap.Error(err))
 		return nil, err
 	}
 
 	nestedAssets, err := enrichment.EnrichAsset(ai.ctx, ai.pa)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Warn("asset enrichment error", zap.String("name", ai.pa.Name), zap.Error(err))
 	}
 	rtn := make([]*types.ProcessableAsset, 0)
 	rtn = append(rtn, ai.pa)
@@ -49,7 +50,7 @@ func (ai *AssetIniter) Init() ([]*types.ProcessableAsset, error) {
 
 		assets, err := NewAssetIniter(nestedAsset).Init()
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Warn("failed to initialize nested asset", zap.String("name", nestedAsset.Name), zap.Error(err))
 		}
 
 		for _, a := range assets {
@@ -62,7 +63,7 @@ func (ai *AssetIniter) Init() ([]*types.ProcessableAsset, error) {
 	}
 
 	if err := database.SaveAsset(ai.pa.Asset); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to save asset", zap.String("asset_id", ai.pa.Asset.ID), zap.Error(err))
 		return nil, err
 	}
 

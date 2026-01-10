@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"go.uber.org/zap"
+
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/runtime"
 	cp "github.com/otiai10/copy"
 )
@@ -76,7 +78,7 @@ func Move(src, dst string, toLibPath bool) error {
 		src = ToLibPath(src)
 		dst = ToLibPath(dst)
 	}
-	log.Print(dst)
+	logger.GetLogger().Debug("moving file", zap.String("src", src), zap.String("dst", dst))
 	if err := cp.Copy(src, dst); err != nil {
 		return err
 	}

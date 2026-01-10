@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
@@ -16,9 +15,12 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/downloader/tools"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/utils"
 	"golang.org/x/net/html"
@@ -65,19 +67,19 @@ func Fetch(urlString string, cookies []*http.Cookie, userAgent string) error {
 	mwc.metadata = metadata
 
 	if err = utils.CreateFolder(utils.ToLibPath(project.FullPath())); err != nil {
-		log.Println("error creating project folder")
+		logger.GetLogger().Error("error creating project folder", zap.String("path", project.FullPath()), zap.Error(err))
 		return err
 	}
 
 	if err = utils.CreateAssetsFolder(project.UUID); err != nil {
-		log.Println("error creating assets folder")
+		logger.GetLogger().Error("error creating assets folder", zap.String("project_uuid", project.UUID), zap.Error(err))
 		return err
 	}
 
 	assets := make([]*types.ProcessableAsset, 0)
 	as, err := mwc.fetchCover()
 	if err != nil {
-		log.Println("error fetching cover")
+		logger.GetLogger().Error("error fetching cover", zap.Error(err))
 		return err
 	}
 
@@ -91,20 +93,20 @@ func Fetch(urlString string, cookies []*http.Cookie, userAgent string) error {
 
 	as, err = mwc.fetchModels()
 	if err != nil {
-		log.Println("error fetching models")
+		logger.GetLogger().Error("error fetching models", zap.Error(err))
 		return err
 	}
 	assets = append(assets, as...)
 
 	_, err = mwc.fetchInstances()
 	if err != nil {
-		log.Println("error fetching models")
+		logger.GetLogger().Error("error fetching instances", zap.Error(err))
 		return err
 	}
 
 	as, err = mwc.fetchPictures()
 	if err != nil {
-		log.Println("error fetching pictures")
+		logger.GetLogger().Error("error fetching pictures", zap.Error(err))
 		return err
 	}
 	assets = append(assets, as...)
@@ -142,7 +144,7 @@ func (mwc *mwClient) fetchPictures() ([]*types.ProcessableAsset, error) {
 
 		a, err := tools.DownloadAsset(p.Name, mwc.project, mwc.client, req)
 		if err != nil {
-			log.Println("Error fetchig image, skiping: ", err)
+			logger.GetLogger().Warn("error fetching image, skipping", zap.String("name", p.Name), zap.Error(err))
 			continue
 		}
 		assets = append(assets, a...)
@@ -162,7 +164,7 @@ func (mwc *mwClient) fetchModels() ([]*types.ProcessableAsset, error) {
 
 		a, err := tools.DownloadAsset(m.ModelName, mwc.project, mwc.client, req)
 		if err != nil {
-			log.Println("Error fetchig model, skiping: ", err)
+			logger.GetLogger().Warn("error fetching model, skipping", zap.String("name", m.ModelName), zap.Error(err))
 			continue
 		}
 		assets = append(assets, a...)
@@ -176,11 +178,11 @@ func (mwc *mwClient) fetchInstances() ([]*types.ProcessableAsset, error) {
 
 	for _, m := range mwc.metadata.Props.PageProps.Design.Instances {
 		sl := rand.Intn(6000-3000) + 3000
-		log.Println("sleeping: ", sl)
+		logger.GetLogger().Debug("sleeping before 3MF data fetch", zap.Int("ms", sl), zap.Int("instance_id", m.ID))
 		time.Sleep(time.Duration(sl) * time.Millisecond)
 		mfData, err := mwc.fetch3MFData(m.ID)
 		if err != nil {
-			log.Println("Failed to download 3MFData, skipping")
+			logger.GetLogger().Warn("failed to download 3MF data, skipping", zap.Int("instance_id", m.ID), zap.Error(err))
 			continue
 		}
 		req, err := http.NewRequest("GET", mfData.URL, nil)
@@ -194,12 +196,12 @@ func (mwc *mwClient) fetchInstances() ([]*types.ProcessableAsset, error) {
 		name = fmt.Sprintf("%s%d%s", name, m.ID, ext)
 
 		sl = rand.Intn(6000-3000) + 3000
-		log.Println("sleeping: ", sl)
+		logger.GetLogger().Debug("sleeping before 3MF file download", zap.Int("ms", sl), zap.Int("instance_id", m.ID))
 		time.Sleep(time.Duration(sl) * time.Millisecond)
 
 		a, err := tools.DownloadAsset(name, mwc.project, mwc.client, req)
 		if err != nil {
-			log.Println("Failed to download 3MF File, skipping")
+			logger.GetLogger().Warn("failed to download 3MF file, skipping", zap.String("name", name), zap.Int("instance_id", m.ID), zap.Error(err))
 			continue
 		}
 		assets = append(assets, a...)
@@ -215,7 +217,7 @@ func (mwc *mwClient) fetch3MFData(id int) (*mf, error) {
 	}
 	req.Header.Add("User-Agent", mwc.userAgent)
 	qwe, _ := httputil.DumpRequestOut(req, true)
-	log.Println(string(qwe))
+	logger.GetLogger().Debug("makerworld 3MF data request", zap.String("request", string(qwe)), zap.Int("instance_id", id))
 	resp, err := mwc.client.Do(req)
 	if err != nil {
 		return nil, err

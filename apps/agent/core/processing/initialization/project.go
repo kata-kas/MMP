@@ -3,10 +3,12 @@ package initialization
 import (
 	"context"
 	"errors"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/discovery"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/utils"
@@ -54,10 +56,10 @@ func (pd *ProjectIniter) Init() (*types.ProcessableProject, error) {
 	}
 	assets, err := pd.assetDiscoverer.Discover(pd.processableProject.Path)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to discover assets", zap.String("path", pd.processableProject.Path), zap.Error(err))
 		return nil, err
 	}
-	log.Println(len(assets))
+	logger.GetLogger().Debug("assets discovered", zap.Int("count", len(assets)), zap.String("path", pd.processableProject.Path))
 
 	outChans := make([]<-chan []*types.ProcessableAsset, 0)
 	eg := errgroup.Group{}
@@ -83,7 +85,7 @@ func (pd *ProjectIniter) Init() (*types.ProcessableProject, error) {
 
 	if pd.persistOnFinish {
 		if err := database.InsertProject(pd.processableProject.Project); err != nil {
-			log.Println(err)
+			logger.GetLogger().Error("failed to insert project", zap.String("project_uuid", pd.processableProject.Project.UUID), zap.Error(err))
 			return nil, err
 		}
 	}

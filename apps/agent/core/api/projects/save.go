@@ -3,11 +3,13 @@ package projects
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -16,13 +18,13 @@ import (
 func save(c echo.Context) error {
 	form, err := c.MultipartForm()
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to parse multipart form", zap.Error(err))
 		return c.NoContent(http.StatusBadRequest)
 	}
 
 	projectPayload := form.Value["payload"]
 	if len(projectPayload) != 1 {
-		log.Println("more payloads than expected")
+		logger.GetLogger().Warn("unexpected number of payloads", zap.Int("count", len(projectPayload)))
 		return echo.NewHTTPError(http.StatusBadRequest, errors.New("more payloads than expected"))
 	}
 
@@ -30,12 +32,12 @@ func save(c echo.Context) error {
 
 	err = json.Unmarshal([]byte(projectPayload[0]), pproject)
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to unmarshal project payload", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := c.Bind(pproject); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to bind project", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -48,7 +50,7 @@ func save(c echo.Context) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("uuid", c.Param("uuid")), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -57,7 +59,7 @@ func save(c echo.Context) error {
 		err := utils.Move(project.FullPath(), pproject.FullPath(), true)
 
 		if err != nil {
-			log.Println(err)
+			logger.GetLogger().Error("failed to move project", zap.String("from", project.FullPath()), zap.String("to", pproject.FullPath()), zap.Error(err))
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
@@ -65,7 +67,7 @@ func save(c echo.Context) error {
 	err = database.UpdateProject(pproject)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to update project", zap.String("uuid", pproject.UUID), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

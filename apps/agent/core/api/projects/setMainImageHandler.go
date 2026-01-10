@@ -2,11 +2,13 @@ package projects
 
 import (
 	"errors"
-	"log"
 	"net/http"
+
+	"go.uber.org/zap"
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
@@ -15,7 +17,7 @@ func setMainImageHandler(c echo.Context) error {
 	pproject := &entities.Project{}
 
 	if err := c.Bind(pproject); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to bind project", zap.Error(err))
 		return c.NoContent(http.StatusBadRequest)
 	}
 
@@ -28,7 +30,7 @@ func setMainImageHandler(c echo.Context) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("uuid", pproject.UUID), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -39,7 +41,7 @@ func setMainImageHandler(c echo.Context) error {
 	err = database.UpdateProject(project)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to update project", zap.String("uuid", project.UUID), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

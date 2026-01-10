@@ -6,13 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 )
 
@@ -38,7 +40,7 @@ func (p *KlipperPrinter) ServerFilesUpload(asset *entities.ProjectAsset) error {
 	project, err := database.GetProject(asset.ProjectUUID)
 
 	if err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to get project", zap.String("project_uuid", asset.ProjectUUID), zap.Error(err))
 		return err
 	}
 

@@ -1,12 +1,14 @@
 package downloader
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/eduardooliveira/stLib/core/downloader/makerworld"
 	"github.com/eduardooliveira/stLib/core/downloader/thingiverse"
+	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/labstack/echo/v4"
 )
 
@@ -26,7 +28,7 @@ func fetch(c echo.Context) error {
 		Cookies: make([]*cookie, 0),
 	}
 	if err := c.Bind(payload); err != nil {
-		log.Println(err)
+		logger.GetLogger().Error("failed to bind downloader payload", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -35,11 +37,11 @@ func fetch(c echo.Context) error {
 	}
 
 	for _, url := range payload.Urls {
-		log.Println(url)
+		logger.GetLogger().Info("downloading", zap.String("url", url))
 		if strings.Contains(url, "thingiverse.com") || strings.Contains(url, "thing:") {
 			err := thingiverse.Fetch(url)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Error("failed to fetch from thingiverse", zap.String("url", url), zap.Error(err))
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 		} else if strings.Contains(url, "makerworld.com") {
@@ -55,7 +57,7 @@ func fetch(c echo.Context) error {
 			agent := c.Request().UserAgent()
 			err := makerworld.Fetch(url, cookies, agent)
 			if err != nil {
-				log.Println(err)
+				logger.GetLogger().Error("failed to fetch from makerworld", zap.String("url", url), zap.Error(err))
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 		}

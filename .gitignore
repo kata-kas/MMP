@@ -49,6 +49,7 @@ release-*
 cache
 /data
 docker/data/
+docker/library/
 .env
 
 # OS
