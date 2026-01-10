@@ -1,0 +1,10 @@
+{
+  "name": "agent",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "go build -o main main.go",
+    "dev": "go run main.go",
+    "clean": "rm -f main main.exe"
+  }
+}

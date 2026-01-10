@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   mmp:
-    image: ghcr.io/${GITHUB_REPOSITORY:-maker-management-platform/mmp}:latest
+    image: mmp:test
     container_name: mmp
     volumes:
       - ./library:/library

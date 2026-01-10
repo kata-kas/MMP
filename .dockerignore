@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+build
+*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Turborepo
+.turbo
+
+# Go build artifacts
+main
+main.exe
+*.test
+*.out
+
+# Data directories
+data/
+cache/
+temp/
+
+# Test data
+testdata*

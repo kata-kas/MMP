@@ -2,11 +2,11 @@
 FROM golang:1.22 AS agent-builder
 
 WORKDIR /build
-COPY apps/agent/go.mod apps/agent/go.sum ./
+COPY apps/agent/go.mod ./
 RUN go mod download
 
 COPY apps/agent/ .
-RUN go build -o main main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main main.go
 
 # Stage 2: Build React UI
 FROM node:20.10 AS ui-builder
@@ -15,7 +15,12 @@ WORKDIR /build
 COPY apps/ui/package*.json ./
 RUN npm ci
 
-COPY apps/ui/ .
+COPY apps/ui/src ./src
+COPY apps/ui/public ./public
+COPY apps/ui/index.html ./
+COPY apps/ui/vite.config.ts ./
+COPY apps/ui/tsconfig*.json ./
+COPY apps/ui/postcss.config.cjs ./
 RUN npm run build
 
 # Stage 3: Runtime with Caddy

@@ -1,0 +1,11 @@
+.vscode
+static/node_modules
+testdata*
+main
+main.exe
+release-*
+cache
+*.log
+__debug*
+/data
+.env

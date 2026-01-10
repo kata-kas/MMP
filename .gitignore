@@ -48,6 +48,7 @@ testdata*
 release-*
 cache
 /data
+docker/data/
 .env
 
 # OS
