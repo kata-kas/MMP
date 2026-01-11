@@ -16,8 +16,13 @@ type ModelProps = {
 }
 
 function Model({ color, model, projectUuid }: ModelProps) {
-    const { settings } = useContext(SettingsContext);
-    const geom = useLoader(STLLoader, `${settings.localBackend}/projects/${projectUuid}/assets/${model.id}/file`) as THREE.BufferGeometry;
+    const { settings, ready } = useContext(SettingsContext);
+    const baseUrl = (ready && settings?.localBackend && settings.localBackend !== '') 
+        ? settings.localBackend 
+        : '/api';
+    const modelUrl = `${baseUrl}/projects/${projectUuid}/assets/${model.id}/file`;
+    
+    const geom = useLoader(STLLoader, modelUrl) as THREE.BufferGeometry;
     const meshRef = useRef<THREE.Mesh>(null!)
 
     const [active, setActive] = useState(false)

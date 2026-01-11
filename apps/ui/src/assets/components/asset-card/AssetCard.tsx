@@ -28,34 +28,49 @@ iconMap.set('.jpg', <IconFile />);
 iconMap.set('.stl', <IconFile3d />);
 
 export function AssetCard({ asset, focused, onFocused, onDelete, onChange, view3d, onView3dChange }: AssetCardProps) {
-    const { settings } = useContext(SettingsContext);
+    const { settings, ready } = useContext(SettingsContext);
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState(false);
     const toggleLoadingCallback = useCallback(() => {
         setLoading((l) => !l)
     }, [])
 
+    const baseUrl = (ready && settings?.localBackend && settings.localBackend !== '') 
+        ? settings.localBackend 
+        : '/api';
+    const imageUrl = asset.image_id && asset.image_id !== "" 
+        ? `${baseUrl}/projects/${asset.project_uuid}/assets/${asset.image_id}/file`
+        : null;
+
     return (
         <>
-            {modal && asset.image_id && asset.image_id != "" && <Lightbox
-                medium={`${settings.localBackend}/projects/${asset.project_uuid}/assets/${asset.image_id}/file`}
-                large={`${settings.localBackend}/projects/${asset.project_uuid}/assets/${asset.image_id}/file`}
+            {modal && imageUrl && <Lightbox
+                medium={imageUrl}
+                large={imageUrl}
                 hideDownload={true}
                 onClose={() => setModal(false)}
             />}
             <Card className={cn("min-w-[280px] w-[280px]", focused && "border-destructive")}>
                 <CardHeader className="p-0 mb-3 cursor-pointer" onClick={() => setModal(true)}>
                     <AspectRatio ratio={16 / 9}>
-                        {asset?.image_id === "" ? (
+                        {asset?.image_id === "" || !asset.image_id ? (
                             <div className="flex items-center justify-center h-full bg-muted">
                                 {iconMap.get(asset.extension) ?? <IconFile className="h-12 w-12 text-muted-foreground" />}
                             </div>
-                        ) : (
+                        ) : imageUrl ? (
                             <img
-                                src={`${settings.localBackend}/projects/${asset.project_uuid}/assets/${asset.image_id}/file`}
+                                src={imageUrl}
                                 alt={asset.name}
                                 className="h-full w-full object-cover"
+                                onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                }}
                             />
+                        ) : (
+                            <div className="flex items-center justify-center h-full bg-muted">
+                                <Skeleton className="h-full w-full" />
+                            </div>
                         )}
                     </AspectRatio>
                 </CardHeader>
@@ -87,7 +102,7 @@ export function AssetCard({ asset, focused, onFocused, onDelete, onChange, view3
                             projectUuid={asset.project_uuid}
                             id={asset.id}
                             openDetails={() => { onFocused() }}
-                            downloadURL={`${settings.localBackend}/projects/${asset.project_uuid}/assets/${asset.id}/file?download=true`}
+                            downloadURL={imageUrl ? `${baseUrl}/projects/${asset.project_uuid}/assets/${asset.id}/file?download=true` : undefined}
                             onDelete={onDelete}
                             toggleLoad={toggleLoadingCallback}>
                             <SetAsMain projectUuid={asset.project_uuid} assetId={asset.image_id} onChange={onChange} />

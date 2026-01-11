@@ -13,20 +13,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
     const { settings } = useContext(SettingsContext);
 
     return (
-        <Card 
-            className={cn(
-                "h-[280px] min-h-[280px] min-w-[280px] w-[280px]",
-                "relative overflow-hidden transition-transform hover:scale-[1.03]",
-                "cursor-pointer"
-            )}
-            asChild
-        >
-            <Link to={`/projects/${project.uuid}`}>
+        <Link to={`/projects/${project.uuid}`} className="block">
+            <Card 
+                className={cn(
+                    "h-[280px] min-h-[280px] min-w-[280px] w-[280px]",
+                    "relative overflow-hidden transition-transform hover:scale-[1.03]",
+                    "cursor-pointer"
+                )}
+            >
                 {project.default_image_id && (
                     <div
                         className="absolute inset-0 bg-cover bg-center transition-transform duration-500"
                         style={{
-                            backgroundImage: `url(${settings.localBackend}/projects/${project.uuid}/assets/${project.default_image_id}/file)`,
+                            backgroundImage: `url(${settings?.localBackend || '/api'}/projects/${project.uuid}/assets/${project.default_image_id}/file)`,
                         }}
                     />
                 )}
@@ -44,7 +43,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                         {project.name}
                     </p>
                 </div>
-            </Link>
-        </Card>
+            </Card>
+        </Link>
     );
 }

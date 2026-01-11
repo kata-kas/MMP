@@ -14,12 +14,18 @@ export function SelectBtn({ selected, onChange, icon }: SelectBtnProps) {
         className: "h-5 w-5",
         stroke: 1.5
     })
+    
+    if (selected) {
+        return (
+            <div className="inline-flex items-center justify-center">
+                <Checkbox checked={selected} onCheckedChange={(checked) => onChange(checked as boolean)} />
+            </div>
+        );
+    }
+    
     return (
         <Button variant="ghost" size="icon" onClick={() => onChange(true)}>
-            {!selected && iconClone}
-            {selected && (
-                <Checkbox checked={selected} onCheckedChange={(checked) => onChange(checked as boolean)} />
-            )}
+            {iconClone}
         </Button>
     );
 }

@@ -4,10 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TagsInput } from '@/components/ui/tags-input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useContext, useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { Tag } from "@/projects/entities/Project.ts";
-import useAxios from 'axios-hooks';
-import { SettingsContext } from '@/core/settings/settingsContext';
+import { useApiQuery } from '@/hooks/use-api-query';
 
 export type Filter = {
     name: string;
@@ -19,16 +18,13 @@ type ProjectFilterCardProps = {
 };
 
 export function ProjectFilterCard({ onChange }: ProjectFilterCardProps) {
-    const { settings } = useContext(SettingsContext);
     const [filter, setFilter] = useState<Filter>({ name: '', tags: [] })
-    const [tags, setTags] = useState<string[]>([]);
-    const [{ data, loading }] = useAxios<Tag[]>(
-        `${settings.localBackend}/tags`
-    );
+    const { data, loading } = useApiQuery<Tag[]>({
+        url: '/tags',
+    });
 
-    useEffect(() => {
-        if (!data) return;
-        setTags(data.map(t => t.value));
+    const tags = useMemo(() => {
+        return data?.map(t => t.value) ?? [];
     }, [data])
 
     const handleClear = () => {

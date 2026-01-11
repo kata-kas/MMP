@@ -1,35 +1,42 @@
-import { useSettings } from "@/core/settings/useSettings";
 import { TempFile } from "@/tempfiles/entities/TempFile";
 import { IconTrash, IconFileArrowRight } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import useAxios from "axios-hooks";
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect } from "react";
 import { ProjectSelect } from "./parts/project-select/ProjectSelect";
 import { Project } from "@/projects/entities/Project";
 import { Header } from "@/core/header/Header";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 export function TempFiles() {
-    const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const { settings } = useSettings();
     const [tempFiles, setTempFiles] = useState<TempFile[]>([]);
-    const [actionLoading, setActionLoading] = useState(false);
-    const [, callSendToProject] = useAxios({ method: 'post' }, { manual: true })
-    const [, callDeleteTemp] = useAxios({ method: 'post' }, { manual: true })
-    const [{ data, loading }] = useAxios<TempFile[]>(
-        `${settings.localBackend}/tempfiles?_=${reload.current}`
-    );
+    const { data, loading } = useApiQuery<TempFile[]>({
+        url: '/tempfiles',
+    });
+    
+    const { data: projects, loading: pLoading } = useApiQuery<Project[]>({
+        url: '/projects/list',
+    });
+
     useEffect(() => {
-        if (!data) return;
-        setTempFiles(data);
+        if (data) {
+            setTempFiles(data);
+        }
     }, [data]);
 
-    const [{ data: projects, loading: pLoading }] = useAxios<Project[]>(
-        `${settings.localBackend}/projects/list?_=${reload.current}`
-    );
+    const sendToProjectMutation = useApiMutation<TempFile, { uuid: string; tempFile: TempFile }>({
+        url: (vars) => `/tempfiles/${vars.uuid}`,
+        method: 'post',
+    });
+
+    const deleteTempMutation = useApiMutation<void, { uuid: string }>({
+        url: (vars) => `/tempfiles/${vars.uuid}/delete`,
+        method: 'post',
+    });
 
     const setProjectUUID = (i: number, p: Project) => {
         const copy = [...tempFiles]
@@ -39,11 +46,8 @@ export function TempFiles() {
 
     const sendToProject = (i: number) => {
         if (!tempFiles[i].project_uuid) return;
-        setActionLoading((s) => !s)
-        callSendToProject({
-            url: `${settings.localBackend}/tempfiles/${tempFiles[i].uuid}`,
-            data: tempFiles[i]
-        })
+        const tempFile = tempFiles[i];
+        sendToProjectMutation.mutate({ uuid: tempFile.uuid, tempFile })
             .then(() => {
                 const copy = [...tempFiles]
                 copy.splice(i, 1)
@@ -51,19 +55,15 @@ export function TempFiles() {
                 toast.success('Great Success!', {
                     description: 'Temporary moved to project!',
                 })
-                setActionLoading((s) => !s)
             })
             .catch((e) => {
                 logger.error(e)
-                setActionLoading((s) => !s)
             });
     }
 
     const deleteTemp = (i: number) => {
-        setActionLoading((s) => !s)
-        callDeleteTemp({
-            url: `${settings.localBackend}/tempfiles/${tempFiles[i].uuid}/delete`
-        })
+        const tempFile = tempFiles[i];
+        deleteTempMutation.mutate({ uuid: tempFile.uuid })
             .then(() => {
                 const copy = [...tempFiles]
                 copy.splice(i, 1)
@@ -71,13 +71,13 @@ export function TempFiles() {
                 toast.success('Great Success!', {
                     description: 'Temporary successfully deleted!',
                 })
-                setActionLoading((s) => !s)
             })
             .catch((e) => {
                 logger.error(e)
-                setActionLoading((s) => !s)
             });
     }
+
+    const actionLoading = sendToProjectMutation.loading || deleteTempMutation.loading;
 
     return (<>
         <Header imagePath={'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?q=80&w=2000&h=400&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'} />

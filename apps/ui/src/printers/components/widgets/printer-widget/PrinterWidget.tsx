@@ -1,22 +1,23 @@
 import { Widget } from "@/dashboard/entities/WidgetType";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useSettings } from "@/core/settings/useSettings";
+import { useContext } from "react";
+import { SettingsContext } from "@/core/settings/settingsContext";
 import { Printer } from "@/printers/entities/Printer";
-import useAxios from "axios-hooks";
 import { ExtruderTemp } from "../parts/heater-temp/ExtruderTemp";
 import { BedTemp } from "../parts/bed-temp/BedTemp";
 import { PrintProgress } from "../parts/print-progress/PrintProgress";
 import { PrintProgressBar } from "../parts/print-progress-bar/PrintProgressBar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useApiQuery } from "@/hooks/use-api-query";
 
 export function PrinterWidget(w: Widget) {
-    const { settings } = useSettings();
+    const { settings } = useContext(SettingsContext);
     const printerId = (w.config as { printer?: string }).printer;
-    const [{ data: printer, loading }] = useAxios<Printer>(
-        printerId ? { url: `${settings.localBackend}/printers/${printerId}` } : null,
-        { skip: !printerId }
-    )
+    const { data: printer, loading } = useApiQuery<Printer>({
+        url: printerId ? `/printers/${printerId}` : '',
+        enabled: !!printerId,
+    })
     const state = {};
     if (loading) return <>Loading...</>;
     return (
@@ -26,7 +27,7 @@ export function PrinterWidget(w: Widget) {
                     {printer?.camera_url ? (
                         <img
                             className="h-full w-full object-cover"
-                            src={`${settings.localBackend}/printers/${(w.config as { printer?: string }).printer}/stream`}
+                            src={settings?.localBackend ? `${settings.localBackend}/printers/${(w.config as { printer?: string }).printer}/stream` : undefined}
                             alt={printer.name}
                         />
                     ) : (

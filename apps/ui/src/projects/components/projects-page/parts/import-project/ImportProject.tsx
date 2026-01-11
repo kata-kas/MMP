@@ -2,16 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
-import useAxios from "axios-hooks";
-import { useContext } from "react";
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useApiMutation } from "@/hooks/use-api-mutation";
+import { logger } from "@/lib/logger";
 
 export function ImportProject() {
-    const { settings } = useContext(SettingsContext);
-    const [{ loading }] = useAxios({
-        url: `${settings.localBackend}/downloader/fetch`,
+    const fetchProjectMutation = useApiMutation<void, { url: string }>({
+        url: '/downloader/fetch',
         method: 'post',
-    }, { manual: true })
+    });
     
     const form = useForm({
         defaultValues: {
@@ -21,16 +19,15 @@ export function ImportProject() {
     
     const onFetch = (data: { urls: string }) => {
         const urls = data.urls.split('\n');
-        const promise = fetchProject({
-            data: {
-                url: urls.join(',')
-            }
-        }) as Promise<unknown>;
-        promise.then(() => {
-            // Project fetch completed
-        }).catch(() => {
-            // Error handling
+        fetchProjectMutation.mutate({
+            url: urls.join(',')
         })
+            .then(() => {
+                // Project fetch completed
+            })
+            .catch((e) => {
+                logger.error(e);
+            })
     }
     
     return (
@@ -52,8 +49,8 @@ export function ImportProject() {
                     Check out <a href="https://github.com/Maker-Management-Platform/mmp-companion" className="text-primary underline">MMP Companion</a> to import from more platforms.
                 </p>
                 <div className="flex justify-end">
-                    <Button type="submit" disabled={loading}>
-                        {loading ? "Submitting..." : "Submit"}
+                    <Button type="submit" disabled={fetchProjectMutation.loading}>
+                        {fetchProjectMutation.loading ? "Submitting..." : "Submit"}
                     </Button>
                 </div>
             </form>

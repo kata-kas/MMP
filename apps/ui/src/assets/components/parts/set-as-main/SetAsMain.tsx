@@ -1,10 +1,9 @@
-import { SettingsContext } from "@/core/settings/settingsContext";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { Heart } from "lucide-react";
-import useAxios from "axios-hooks";
-import { useCallback, useContext } from "react";
+import { useCallback } from "react";
 import { logger } from "@/lib/logger";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 export type SetAsMainProps = {
     projectUuid: string;
@@ -13,20 +12,15 @@ export type SetAsMainProps = {
 }
 
 export function SetAsMain({ projectUuid, assetId, onChange }: SetAsMainProps) {
-    const { settings } = useContext(SettingsContext);
-    const [, callSetMainImage] = useAxios(
-        {
-            url: `${settings.localBackend}/projects/${projectUuid}/image`,
-            method: 'POST'
-        },
-        { manual: true }
-    );
+    const setMainImageMutation = useApiMutation<void, { uuid: string; default_image_id?: string }>({
+        url: `/projects/${projectUuid}/image`,
+        method: 'post',
+    });
+
     const setMainImage = useCallback(() => {
-        callSetMainImage({
-            data: {
-                uuid: projectUuid,
-                default_image_id: assetId
-            }
+        setMainImageMutation.mutate({
+            uuid: projectUuid,
+            default_image_id: assetId
         })
             .then(() => {
                 toast.success('Great Success!', {
@@ -37,7 +31,7 @@ export function SetAsMain({ projectUuid, assetId, onChange }: SetAsMainProps) {
             .catch((e) => {
                 logger.error(e)
             });
-    }, [projectUuid, assetId, callSetMainImage, onChange]);
+    }, [projectUuid, assetId, setMainImageMutation, onChange]);
 
     if (!assetId) return null;
 

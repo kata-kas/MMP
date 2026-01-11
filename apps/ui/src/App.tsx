@@ -1,6 +1,5 @@
 import { AppSidebar } from "./components/app-sidebar";
 import { Outlet, useLocation, Link } from "react-router-dom";
-import { AxiosErrorHandler } from './core/axios-error-handler/AxiosErrorHandler.tsx';
 import { ScrollToTop } from './core/scroll-to-top/ScrollToTop.tsx';
 import { DashboardProvider } from './dashboard/provider/DashboardProvider.tsx';
 import { PrinterWidgetProvider } from './printers/providers/PrinterWidgetProvider.tsx';
@@ -111,7 +110,6 @@ export default function App() {
                         </SidebarInset>
                     </SidebarProvider>
                     <ScrollToTop />
-                    <AxiosErrorHandler />
                     <NewProjectNotification />
                     <DiscoveryNotifications />
                     <NewTempfileNotification />

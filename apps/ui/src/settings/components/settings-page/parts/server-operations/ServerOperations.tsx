@@ -1,22 +1,20 @@
 import { ConfirmDialog } from "@/core/dialogs/confirm-dialog/ConfirmDialog";
-import { SettingsContext } from "@/core/settings/settingsContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import useAxios from "axios-hooks";
-import { useContext, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { logger } from "@/lib/logger";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 export function ServerOperations() {
-    const { settings } = useContext(SettingsContext);
     const [isOpen, setIsOpen] = useState(false);
-    const [{ loading }, doDiscovery] = useAxios(
-        {
-            url: `${settings.localBackend}/system/discovery`
-        }, { manual: true })
+    const discoveryMutation = useApiMutation<void, void>({
+        url: '/system/discovery',
+        method: 'get',
+    });
 
     const onOk = useCallback(() => {
         setIsOpen(false);
-        doDiscovery()
+        discoveryMutation.mutate(undefined)
             .then(() => {
                 toast.success('Great Success!', {
                     description: 'Global discovery started',
@@ -25,11 +23,11 @@ export function ServerOperations() {
             .catch((e) => {
                 logger.error(e)
             });
-    }, [doDiscovery])
+    }, [discoveryMutation])
     return (
         <fieldset className="space-y-4 rounded-lg border p-4">
             <legend className="px-2 text-sm font-medium">Discovery</legend>
-            <Button onClick={() => setIsOpen(true)} disabled={loading}>Run discovery</Button>
+            <Button onClick={() => setIsOpen(true)} disabled={discoveryMutation.loading}>Run discovery</Button>
             <ConfirmDialog opened={isOpen} onOk={onOk} onCancel={() => setIsOpen(false)} />
         </fieldset>
     )

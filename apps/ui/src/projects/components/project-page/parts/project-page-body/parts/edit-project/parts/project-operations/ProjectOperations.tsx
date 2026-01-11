@@ -1,4 +1,3 @@
-import { SettingsContext } from "@/core/settings/settingsContext";
 import { Project } from "@/projects/entities/Project";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +6,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { IconHomeMove } from "@tabler/icons-react";
-import useAxios from "axios-hooks";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { DeleteBtn } from "./delete-btn/DeleteBtn";
 import { DiscoverBtn } from "./discover-btn/DiscoverBtn";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 type ProjectOperationsProps = {
     project: Project;
@@ -21,31 +21,26 @@ type ProjectOperationsProps = {
 }
 
 export function ProjectOperations({ project }: ProjectOperationsProps) {
-    const { settings } = useContext(SettingsContext);
-
     const [path, setPath] = useState(project.path);
     const [open, setOpen] = useState(false);
-    const [{ loading }, moveProject] = useAxios({
+    
+    const { data: paths, loading: lPaths } = useApiQuery<string[]>({
+        url: '/system/paths',
+    });
+
+    const moveProjectMutation = useApiMutation<{ path: string }, { uuid: string; path: string }>({
+        url: (vars) => `/projects/${vars.uuid}/move`,
         method: 'post',
-    }, { manual: true })
-    const [{ data: paths, loading: lPaths }] = useAxios<string[]>(
-        {
-            url: `${settings.localBackend}/system/paths`
-        }
-    )
+    });
+
     const onMoveHandler = () => {
-        moveProject({
-            url: `${settings.localBackend}/projects/${project.uuid}/move`,
-            data: {
-                uuid: project.uuid,
-                path: path
-            }
-        }).then(({ data }) => {
-            setPath((data as { path?: string }).path ?? project.path)
-            toast.success('Great Success!', {
-                description: 'Project moved',
+        moveProjectMutation.mutate({ uuid: project.uuid, path })
+            .then((data) => {
+                setPath(data.path ?? project.path)
+                toast.success('Great Success!', {
+                    description: 'Project moved',
+                })
             })
-        })
             .catch((e) => {
                 logger.error(e)
             });
@@ -105,7 +100,7 @@ export function ProjectOperations({ project }: ProjectOperationsProps) {
                 <Button
                     size="icon"
                     onClick={onMoveHandler}
-                    disabled={loading}
+                    disabled={moveProjectMutation.loading}
                 >
                     <IconHomeMove className="h-4 w-4" stroke={1.5} />
                 </Button>

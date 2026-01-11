@@ -1,6 +1,4 @@
-import useAxios from "axios-hooks";
-import { useContext, useEffect, useRef } from "react";
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FormProvider, useForm } from "./context";
 import { Core } from "./parts/Core";
@@ -11,21 +9,18 @@ import { Integrations } from "./parts/Integrations";
 import { AgentSettings } from "@/settings/entities/AgentSettings";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 export function SettingsForm() {
-    const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const { settings } = useContext(SettingsContext);
-    const [{ data, loading: cLoading }] = useAxios<AgentSettings>(
-        settings.localBackend 
-            ? { url: `${settings.localBackend}/system/settings?_=${reload.current}` }
-            : null,
-        { skip: !settings.localBackend }
-    )
+    const { data, loading: cLoading } = useApiQuery<AgentSettings>({
+        url: '/system/settings',
+    });
 
-    const [{ loading: sLoading }, executeSave] = useAxios({
-        url: settings.localBackend ? `${settings.localBackend}/system/settings` : '',
-        method: 'POST'
-    }, { manual: true })
+    const saveSettingsMutation = useApiMutation<void, AgentSettings>({
+        url: '/system/settings',
+        method: 'post',
+    });
 
     const form = useForm<AgentSettings>({
         defaultValues: {
@@ -63,9 +58,7 @@ export function SettingsForm() {
     }, [data, form])
 
     const onSave = (formData: AgentSettings) => {
-        executeSave({
-            data: formData
-        })
+        saveSettingsMutation.mutate(formData)
             .then(() => {
                 toast.success('Great Success!', {
                     description: 'Settings updated',
@@ -88,7 +81,7 @@ export function SettingsForm() {
                     <fieldset className="mt-6 space-y-4 rounded-lg border p-4">
                         <legend className="px-2 text-sm font-medium">Commit</legend>
                         <div className="flex justify-end gap-2">
-                            <Button type="submit" disabled={sLoading || cLoading} variant="destructive">Save</Button>
+                            <Button type="submit" disabled={saveSettingsMutation.loading || cLoading} variant="destructive">Save</Button>
                             <Button type="button" variant="outline" onClick={() => form.reset()}>Reset</Button>
                         </div>
                     </fieldset>

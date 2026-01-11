@@ -1,7 +1,4 @@
-import useAxios from "axios-hooks";
 import { AddPrinter } from "./parts/add-printer/AddPrinter";
-import { useEffect, useRef, useState } from "react";
-import { useSettings } from "@/core/settings/useSettings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,30 +12,31 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { logger } from "@/lib/logger";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 export function PrintersPage() {
-    const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const { settings } = useSettings();
-    const [printers, setPrinters] = useState<Printer[]>([])
-    const [{ data }] = useAxios<Printer[]>({ url: `${settings.localBackend}/printers?_=${reload.current}` })
-    const [{ loading: dLoading }, executeDelete] = useAxios({ method: 'POST' }, { manual: true })
+    const { data } = useApiQuery<Printer[]>({
+        url: '/printers',
+    });
     
-    useEffect(() => {
-        setPrinters(data)
-    }, [data]);
+    const deletePrinterMutation = useApiMutation<void, { uuid: string }>({
+        url: (vars) => `/printers/${vars.uuid}/delete`,
+        method: 'post',
+    });
+
+    const printers = data ?? [];
     
     function deletePrinter(i: number): void {
         const printer = printers[i];
-        executeDelete({
-            url: `${settings.localBackend}/printers/${printer.uuid}/delete`
-        })
+        if (!printer) {
+            return;
+        }
+        deletePrinterMutation.mutate({ uuid: printer.uuid })
             .then(() => {
                 toast.success('Great Success!', {
                     description: 'Printer deleted!',
                 })
-                const copy = [...printers]
-                copy.splice(i, 1)
-                setPrinters(copy)
             })
             .catch((e) => {
                 logger.error(e)
@@ -109,7 +107,7 @@ export function PrintersPage() {
                                         <div className="flex justify-end">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" disabled={dLoading}>
+                                                    <Button variant="ghost" size="icon" disabled={deletePrinterMutation.loading}>
                                                         <IconDots className="h-4 w-4" stroke={1.5} />
                                                     </Button>
                                                 </DropdownMenuTrigger>

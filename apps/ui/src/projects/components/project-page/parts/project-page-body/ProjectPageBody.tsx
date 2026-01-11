@@ -2,9 +2,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import useAxios from "axios-hooks";
 import { Asset, AssetType } from "@/assets/entities/Assets.ts";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ModelDetailPane } from "@/assets/components/model/model-detail-pane/ModelDetailPane.tsx";
 import { IconSettings, IconFiles } from "@tabler/icons-react";
 import { X } from "lucide-react";
@@ -12,11 +11,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { AddAsset } from "./parts/add-asset/AddAsset.tsx";
 import { EditProject } from "./parts/edit-project/EditProject.tsx";
 import { Project } from "../../../../entities/Project.ts";
-import { SettingsContext } from "@/core/settings/settingsContext.ts";
 import { AssetDetails } from "@/assets/components/asset-details/AssetDetails.tsx";
 import { Refresher } from "./parts/refresher/Refresher.tsx";
 import { AssetCard } from "@/assets/components/asset-card/AssetCard.tsx";
 import { cn } from "@/lib/utils";
+import { useApiQuery } from "@/hooks/use-api-query";
 
 type ProjectAssetsListProps = {
     projectUuid: string;
@@ -25,19 +24,20 @@ type ProjectAssetsListProps = {
 }
 
 export function ProjectPageBody({ projectUuid, project, onProjectChange }: ProjectAssetsListProps) {
-    const { settings } = useContext(SettingsContext);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [assets, setAssets] = useState<Asset[]>([]);
     const [selectedModels, setSelectedModels] = useState<Asset[]>([]);
     const [selectedAsset, setSelectedAsset] = useState<Asset>();
     const [typeFilter, setTypeFilter] = useState<string | null>(searchParams.get('tab'));
-    const [{ data: assetTypes }] = useAxios<AssetType[]>(
-        `${settings.localBackend}/assettypes`
-    );
-    const [{ data, loading, error }, refetch] = useAxios<Asset[]>(
-        `${settings.localBackend}/projects/${projectUuid}/assets`
-    );
+    
+    const { data: assetTypes } = useApiQuery<AssetType[]>({
+        url: '/assettypes',
+    });
+    
+    const { data, loading, error, refetch } = useApiQuery<Asset[]>({
+        url: `/projects/${projectUuid}/assets`,
+    });
     
     useEffect(() => {
         if (data) {
@@ -71,7 +71,11 @@ export function ProjectPageBody({ projectUuid, project, onProjectChange }: Proje
 
     return (
         <>
-            {error && <p>Error!</p>}
+            {error && !loading && (
+                <div className="container mx-auto my-2">
+                    <p className="text-destructive">Failed to load assets. Please try again.</p>
+                </div>
+            )}
             <div className="container mx-auto w-full my-2">
                 <Tabs value={typeFilter || 'all'} onValueChange={(v) => {
                     setTypeFilter(v);

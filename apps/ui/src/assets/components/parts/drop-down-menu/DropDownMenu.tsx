@@ -1,10 +1,8 @@
-import { SettingsContext } from "@/core/settings/settingsContext";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { IconDotsVertical, IconDownload, IconTrash } from "@tabler/icons-react";
-import useAxios from "axios-hooks";
-import { useContext } from "react";
 import { logger } from "@/lib/logger";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 type DropDownMenuProps = {
     id: string;
@@ -17,18 +15,14 @@ type DropDownMenuProps = {
 }
 
 export function DropDownMenu({ id, projectUuid, children, downloadURL, onDelete, openDetails, toggleLoad }: DropDownMenuProps) {
-    const { settings } = useContext(SettingsContext);
-    const [, callDelete] = useAxios(
-        {
-            url: `${settings.localBackend}/projects/${projectUuid}/assets/${id}/delete`,
-            method: 'POST'
-        },
-        { manual: true }
-    );
+    const deleteAssetMutation = useApiMutation<void, void>({
+        url: `/projects/${projectUuid}/assets/${id}/delete`,
+        method: 'post',
+    });
 
     const handleDelete = () => {
         toggleLoad && toggleLoad();
-        callDelete()
+        deleteAssetMutation.mutate(undefined)
             .then(() => {
                 onDelete && onDelete();
             }).catch((e) => {

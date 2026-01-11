@@ -4,28 +4,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter } from "./parts/project-filter-card/ProjectFilterCard.tsx";
 import { ProjectCard } from "./parts/project-card/ProjectCard.tsx";
 import { useSearchParams } from "react-router-dom";
-import useAxios from "axios-hooks";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Project } from "@/projects/entities/Project.ts";
-import { useSettings } from "@/core/settings/useSettings";
 import { ProjectFilter } from "./parts/project-filter/ProjectFilter.tsx";
 import { logger } from "@/lib/logger";
+import { useApiQuery } from "@/hooks/use-api-query";
 
 export function ProjectsList() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const { settings } = useSettings();
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState('20')
-    const [projects, setProjects] = useState<Project[]>([])
     const [filter, setFilter] = useState<Filter>({ name: '', tags: [] })
-    const [{ data, loading, error }] = useAxios<{ items?: Project[]; page?: number; total_pages?: number }>(
-        `${settings.localBackend}/projects?page=${page - 1}&size=${perPage}${filter.name ? '&name=' + filter.name : ''}${filter.tags.length > 0 ? '&tags=' + filter.tags?.join(",") : ''}&_=${reload.current}`
-    );
-    useEffect(() => {
-        if (!data?.items) return;
-        setProjects(data.items)
-    }, [data]);
+    
+    const queryParams = useMemo(() => {
+        const params = new URLSearchParams({
+            page: (page - 1).toString(),
+            size: perPage,
+        });
+        if (filter.name) params.append('name', filter.name);
+        if (filter.tags.length > 0) params.append('tags', filter.tags.join(','));
+        return params.toString();
+    }, [page, perPage, filter.name, filter.tags]);
+
+    const { data, loading, error } = useApiQuery<{ items?: Project[]; page?: number; total_pages?: number }>({
+        url: `/projects?${queryParams}`,
+    });
+
+    const projects = data?.items ?? [];
     useEffect(() => {
         const filterParam = searchParams.get('filter');
         if (!filterParam) return;
@@ -36,7 +41,13 @@ export function ProjectsList() {
         }
     }, [searchParams])
 
-    if (error) return <p>Error!</p>;
+    if (error && !loading) {
+        return (
+            <div className="container mx-auto my-2 w-full">
+                <p className="text-destructive">Failed to load projects. Please try again.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto my-2 w-full">

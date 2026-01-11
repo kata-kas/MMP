@@ -1,11 +1,10 @@
-import { useSettings } from "@/core/settings/useSettings";
 import { Tag } from "@/projects/entities/Project";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TagsInput } from "@/components/ui/tags-input";
 import { IconFilter, IconSearch, IconX } from "@tabler/icons-react";
-import useAxios from "axios-hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useApiQuery } from "@/hooks/use-api-query";
 
 export type Filter = {
     name: string;
@@ -18,17 +17,14 @@ type ProjectFilterProps = {
 };
 
 export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
-    const { settings } = useSettings();
     const [filter, setFilter] = useState<Filter>(value)
-    const [tags, setTags] = useState<string[]>([]);
     const [opened, setOpened] = useState(false);
-    const [{ data, loading }] = useAxios<Tag[]>(
-        `${settings.localBackend}/tags`
-    );
+    const { data, loading } = useApiQuery<Tag[]>({
+        url: '/tags',
+    });
 
-    useEffect(() => {
-        if (!data) return;
-        setTags(data.map(t => t.value));
+    const tags = useMemo(() => {
+        return data?.map(t => t.value) ?? [];
     }, [data])
 
 
@@ -61,7 +57,7 @@ export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
                     data={tags}
                     maxDropdownHeight={200}
                     value={filter.tags}
-                    onChange={(v) => setFilter((f) => { return { ...f, tags: v } })}
+                    onChange={(v) => setFilter((f) => ({ ...f, tags: v }))}
                     splitChars={[',', ' ', '|']}
                     clearable
                     className="w-[200px]"

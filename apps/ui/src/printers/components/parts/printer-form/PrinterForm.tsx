@@ -1,4 +1,3 @@
-import { useSettings } from "@/core/settings/useSettings";
 import { Printer, printerTypes } from "@/printers/entities/Printer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { IconPlugConnected } from "@tabler/icons-react";
-import useAxios from "axios-hooks";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { logger } from "@/lib/logger";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 type PrinterFormProps = {
     printer?: Printer
@@ -17,7 +16,6 @@ type PrinterFormProps = {
 }
 
 export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
-    const { settings } = useSettings();
     const form = useForm({
         defaultValues: {
             name: '',
@@ -27,14 +25,15 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
         },
     });
     
-    const [{ loading }, executeSave] = useAxios({ method: 'POST' }, { manual: true })
-    const [{ loading: cLoading }, executTest] = useAxios(
-        { 
-            method: 'POST', 
-            url: `${settings.localBackend}/printers/test`
-        }, 
-        { manual: true }
-    )
+    const savePrinterMutation = useApiMutation<Printer, Printer>({
+        url: printer?.uuid ? `/printers/${printer.uuid}` : '/printers',
+        method: 'post',
+    });
+
+    const testPrinterMutation = useApiMutation<{ version?: string; state?: string; status?: string }, { address: string; type: string }>({
+        url: '/printers/test',
+        method: 'post',
+    });
     
     useEffect(() => {
         if (!printer) return;
@@ -42,15 +41,9 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
     }, [printer, form])
     
     const onSave = (data: Printer) => {
-        const url = `${settings.localBackend}/printers${printer?.uuid ? '/' + printer.uuid : ''}`
-        executeSave({
-            url,
-            data: {
-                ...data,
-            }
-        })
-            .then(({ data }) => {
-                onPrinterChange(data as Printer)
+        savePrinterMutation.mutate(data)
+            .then((savedPrinter) => {
+                onPrinterChange(savedPrinter)
                 toast.success('Great Success!', {
                     description: 'Project updated',
                 })
@@ -65,9 +58,8 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
         if (values.address != '' && values.type != '') {
             const tyype = printerTypes.get(values.type)
             if (!tyype) return;
-            executTest({ data: values })
-                .then(({ data }) => {
-                    const responseData = data as { version?: string; state?: string; status?: string };
+            testPrinterMutation.mutate(values)
+                .then((responseData) => {
                     if (responseData.version) form.setValue('version', responseData.version)
                     if (responseData.state) form.setValue('state', responseData.state)
                     if (responseData.status) form.setValue('status', responseData.status)
@@ -136,7 +128,7 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
                         variant="default"
                         size="icon"
                         onClick={connect}
-                        disabled={cLoading}
+                        disabled={testPrinterMutation.loading}
                     >
                         <IconPlugConnected className="h-4 w-4" stroke={1.5} />
                     </Button>
@@ -176,8 +168,8 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
             )}
             
             <div className="flex justify-end">
-                <Button type="submit" disabled={loading}>
-                    {loading ? "Saving..." : "Save"}
+                <Button type="submit" disabled={savePrinterMutation.loading}>
+                    {savePrinterMutation.loading ? "Saving..." : "Save"}
                 </Button>
             </div>
         </form>

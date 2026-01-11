@@ -2,9 +2,7 @@ import { Widget } from "@/dashboard/entities/WidgetType";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useContext, useEffect } from "react";
-import { useSettings } from "@/core/settings/useSettings";
 import { Job, Printer, Thermal } from "@/printers/entities/Printer";
-import useAxios from "axios-hooks";
 import { PrintProgressBar } from "../parts/print-progress-bar/PrintProgressBar";
 import Printer3dNozzleHeatOutlineIcon from "mdi-react/Printer3dNozzleHeatOutlineIcon";
 import { IconFile3d, IconPercentage, IconSkateboarding } from "@tabler/icons-react";
@@ -12,15 +10,15 @@ import RadiatorDisabledIcon from "mdi-react/RadiatorDisabledIcon";
 import { SSEContext } from "@/core/sse/SSEContext";
 import { useCumulativeEvent } from "@/core/sse/useCumulativeEvent";
 import { useId } from 'react';
+import { useApiQuery } from "@/hooks/use-api-query";
 
 export function PrinterTableWidget(w: Widget) {
-    const { settings } = useSettings();
     const subscriberId = useId();
     const printerId = (w.config as { printer?: string }).printer;
-    const [{ data: printer, loading }] = useAxios<Printer>(
-        printerId ? { url: `${settings.localBackend}/printers/${printerId}` } : null,
-        { skip: !printerId }
-    )
+    const { data: printer, loading } = useApiQuery<Printer>({
+        url: printerId ? `/printers/${printerId}` : '',
+        enabled: !!printerId,
+    })
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
     const [extruder, setExtruder] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [heaterBed, setHeaterBed] = useCumulativeEvent<Thermal>({ temperature: 0 });

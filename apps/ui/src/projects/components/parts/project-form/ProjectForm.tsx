@@ -5,15 +5,14 @@ import { TagsInput } from "@/components/ui/tags-input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { Project } from "../../../entities/Project.ts";
-import useAxios from "axios-hooks";
-import { useContext, useState } from "react";
-import { SettingsContext } from "@/core/settings/settingsContext.ts";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useDropzone } from "@/components/ui/dropzone";
 import { UploadPreview } from "../upload-preview/UploadPreview.tsx";
 import { cn } from "@/lib/utils";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { logger } from "@/lib/logger";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 type ProjectFormProps = {
     project: Project;
@@ -22,14 +21,11 @@ type ProjectFormProps = {
 };
 
 export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFormProps) {
-    const { settings } = useContext(SettingsContext);
     const [files, setFiles] = useState<File[]>([]);
-    const [{ loading }, executeSave] = useAxios(
-        {
-            method: 'POST'
-        },
-        { manual: true }
-    )
+    const saveProjectMutation = useApiMutation<Project, FormData>({
+        url: project.uuid ? `/projects/${project.uuid}` : '/projects',
+        method: 'post',
+    });
     
     const form = useForm<Project & { tags: string[] }>({
         defaultValues: {
@@ -54,11 +50,8 @@ export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFor
         if (files.length > 0) {
             files.forEach((file) => formDataToSend.append("files", file));
         }
-        executeSave({
-            url: `${settings.localBackend}/projects${project.uuid ? "/" + project.uuid : ''}`,
-            data: formDataToSend
-        })
-            .then(({ data }) => {
+        saveProjectMutation.mutate(formDataToSend)
+            .then((data) => {
                 onProjectChange(data)
                 toast.success('Great Success!', {
                     description: 'Project updated',
@@ -144,8 +137,8 @@ export function ProjectForm({ project, onProjectChange, withUpload }: ProjectFor
             )}
             
             <div className="flex justify-end">
-                <Button type="submit" disabled={loading}>
-                    {loading ? "Submitting..." : "Submit"}
+                <Button type="submit" disabled={saveProjectMutation.loading}>
+                    {saveProjectMutation.loading ? "Submitting..." : "Submit"}
                 </Button>
             </div>
         </form>

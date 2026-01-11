@@ -26,14 +26,22 @@ export function SettingsProvider({ loading, children }: React.PropsWithChildren<
         if (hasInitialized.current) return;
         hasInitialized.current = true;
 
+        let isMounted = true;
+
         const timeoutId = setTimeout(() => {
-            logger.error('Settings loading timeout - using default');
-            setSettings(prev => ({ ...prev, localBackend: '/api' }))
-            setReady(true);
+            if (isMounted) {
+                logger.error('Settings loading timeout - using default');
+                setSettings(prev => ({ ...prev, localBackend: '/api' }))
+                setReady(true);
+            }
         }, 5000);
 
         getSettings()
             .then(({ data: s }) => {
+                if (!isMounted) {
+                    setReady(true);
+                    return;
+                }
                 clearTimeout(timeoutId);
                 if (!s?.localBackend) {
                     logger.error('Settings loaded but localBackend is missing - using default');
@@ -44,22 +52,35 @@ export function SettingsProvider({ loading, children }: React.PropsWithChildren<
                 setSettings(prev => ({ ...prev, ...s }))
                 getAgentSettings({ url: `${s.localBackend}/system/settings` })
                     .then(({ data: agent }) => {
-                        setSettings(prev => ({ ...prev, agent: agent as Record<string, unknown> }))
+                        if (isMounted) {
+                            setSettings(prev => ({ ...prev, agent: agent as Record<string, unknown> }))
+                        }
                         setReady(true);
                     })
                     .catch((e) => {
-                        logger.error(e);
+                        const error = e as { name?: string; code?: string };
+                        if (isMounted && error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                            logger.error('Failed to load agent settings:', e);
+                        }
                         setReady(true);
                     });
             })
             .catch((e) => {
                 clearTimeout(timeoutId);
-                logger.error('Failed to load settings - using default', e);
-                setSettings(prev => ({ ...prev, localBackend: '/api' }))
+                const error = e as { name?: string; code?: string };
+                if (isMounted && error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+                    logger.error('Failed to load settings - using default', e);
+                }
+                if (isMounted) {
+                    setSettings(prev => ({ ...prev, localBackend: '/api' }))
+                }
                 setReady(true);
             });
 
-        return () => clearTimeout(timeoutId);
+        return () => {
+            isMounted = false;
+            clearTimeout(timeoutId);
+        };
     }, [getSettings, getAgentSettings])
 
     return (

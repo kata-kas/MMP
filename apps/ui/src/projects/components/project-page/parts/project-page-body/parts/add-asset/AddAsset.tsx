@@ -1,28 +1,19 @@
 import { useDropzone } from "@/components/ui/dropzone";
 import { toast } from "sonner";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
-import useAxios from "axios-hooks";
-import { useContext } from "react";
-import { SettingsContext } from "@/core/settings/settingsContext";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 type AddAssetProps = {
     projectUuid: string
 }
 
 export function AddAsset({ projectUuid }: AddAssetProps) {
-    const { settings } = useContext(SettingsContext);
-    const [{ loading }, executeSave] = useAxios(
-        {
-            url: `${settings.localBackend}/projects/${projectUuid}/assets`,
-            method: 'POST'
-        },
-        {
-            manual: true,
-            autoCancel: false
-        }
-    )
+    const saveAssetMutation = useApiMutation<void, FormData>({
+        url: `/projects/${projectUuid}/assets`,
+        method: 'post',
+    });
     
     const dropzone = useDropzone({
         onDrop: (acceptedFiles) => {
@@ -30,7 +21,7 @@ export function AddAsset({ projectUuid }: AddAssetProps) {
                 const formData = new FormData();
                 formData.append("project_uuid", projectUuid);
                 formData.append("files", file);
-                executeSave({ data: formData })
+                saveAssetMutation.mutate(formData)
                     .then(() => {
                         toast.success('Great Success!', {
                             description: 'Asset added to your project!',
@@ -50,7 +41,7 @@ export function AddAsset({ projectUuid }: AddAssetProps) {
                 className={cn(
                     "flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors",
                     dropzone.isDragActive && "border-primary bg-primary/5",
-                    loading && "opacity-50 pointer-events-none"
+                    saveAssetMutation.loading && "opacity-50 pointer-events-none"
                 )}
             >
                 <input {...dropzone.getInputProps()} />

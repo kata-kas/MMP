@@ -1,11 +1,10 @@
 import { ConfirmDialog } from "@/core/dialogs/confirm-dialog/ConfirmDialog";
-import { SettingsContext } from "@/core/settings/settingsContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import useAxios from "axios-hooks";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/lib/logger";
+import { useApiMutation } from "@/hooks/use-api-mutation";
 
 interface DeleteBtnProps {
     projectUuid: string;
@@ -13,17 +12,15 @@ interface DeleteBtnProps {
 
 export function DeleteBtn({ projectUuid }: DeleteBtnProps) {
     const navigate = useNavigate();
-    const { settings } = useContext(SettingsContext);
     const [isOpen, setIsOpen] = useState(false);
-    const [{ loading }, doDelete] = useAxios(
-        {
-            url: `${settings.localBackend}/projects/${projectUuid}/delete`,
-            method: 'post',
-        }, { manual: true })
+    const deleteProjectMutation = useApiMutation<void, void>({
+        url: `/projects/${projectUuid}/delete`,
+        method: 'post',
+    });
 
     const onOk = useCallback(() => {
         setIsOpen(false);
-        doDelete()
+        deleteProjectMutation.mutate(undefined)
             .then(() => {
                 toast.success('Great Success!', {
                     description: 'Project deleted',
@@ -33,11 +30,11 @@ export function DeleteBtn({ projectUuid }: DeleteBtnProps) {
             .catch((e) => {
                 logger.error(e)
             });
-    }, [doDelete, navigate])
+    }, [deleteProjectMutation, navigate])
 
     return (<>
-        <Button variant="destructive" onClick={() => setIsOpen(true)} disabled={loading}>
-            {loading ? "Deleting..." : "Delete Project"}
+        <Button variant="destructive" onClick={() => setIsOpen(true)} disabled={deleteProjectMutation.loading}>
+            {deleteProjectMutation.loading ? "Deleting..." : "Delete Project"}
         </Button>
         <ConfirmDialog opened={isOpen} onOk={onOk} onCancel={() => setIsOpen(false)} />
     </>
