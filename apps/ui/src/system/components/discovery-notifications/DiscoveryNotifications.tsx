@@ -3,7 +3,6 @@ import { useId } from "react";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
-import { logger } from "@/lib/logger";
 
 export function DiscoveryNotifications() {
     const subscriberId = useId();

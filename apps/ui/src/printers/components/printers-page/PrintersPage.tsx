@@ -1,6 +1,6 @@
 import useAxios from "axios-hooks";
 import { AddPrinter } from "./parts/add-printer/AddPrinter";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSettings } from "@/core/settings/useSettings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

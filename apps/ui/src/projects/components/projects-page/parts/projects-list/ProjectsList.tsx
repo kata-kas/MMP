@@ -5,7 +5,7 @@ import { Filter } from "./parts/project-filter-card/ProjectFilterCard.tsx";
 import { ProjectCard } from "./parts/project-card/ProjectCard.tsx";
 import { useSearchParams } from "react-router-dom";
 import useAxios from "axios-hooks";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Project } from "@/projects/entities/Project.ts";
 import { useSettings } from "@/core/settings/useSettings";
 import { ProjectFilter } from "./parts/project-filter/ProjectFilter.tsx";

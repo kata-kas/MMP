@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ProjectForm } from "@/projects/components/parts/project-form/ProjectForm";
 import { Project } from "@/projects/entities/Project.ts";
-import { logger } from "@/lib/logger";
 
 export function CreateProject() {
     const navigate = useNavigate();

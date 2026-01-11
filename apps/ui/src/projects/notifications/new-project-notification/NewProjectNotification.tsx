@@ -3,7 +3,6 @@ import { useId } from "react";
 import { toast } from "sonner";
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { logger } from "@/lib/logger";
 
 export function NewProjectNotification() {
     const subscriberId = useId();

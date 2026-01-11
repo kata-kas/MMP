@@ -8,7 +8,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SettingsContext } from '@/core/settings/settingsContext.ts';
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { logger } from "@/lib/logger";
 
 type ModelProps = {
     color: string,

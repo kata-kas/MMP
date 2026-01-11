@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import useAxios from "axios-hooks";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { logger } from "@/lib/logger";
 
 type SentToPrinterBtnProps = {

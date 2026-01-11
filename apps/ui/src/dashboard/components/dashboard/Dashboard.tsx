@@ -4,7 +4,6 @@ import "/node_modules/react-resizable/css/styles.css"
 import { useContext, useState } from "react";
 import { Widget, } from "./parts/widget/Widget";
 import { dashboardContext } from "@/dashboard/provider/DashboardContext";
-import { logger } from "@/lib/logger";
 
 import { Responsive, WidthProvider } from "react-grid-layout";
 const ReactGridLayout = WidthProvider(Responsive);

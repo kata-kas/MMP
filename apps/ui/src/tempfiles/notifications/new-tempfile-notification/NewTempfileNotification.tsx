@@ -2,7 +2,6 @@ import SSEContext from "@/core/sse/SSEContext";
 import { toast } from "sonner";
 import { useId, useContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { logger } from "@/lib/logger";
 
 export function NewTempfileNotification() {
     const subscriberId = useId();

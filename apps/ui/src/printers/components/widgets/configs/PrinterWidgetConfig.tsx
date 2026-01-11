@@ -4,7 +4,7 @@ import { Printer } from "@/printers/entities/Printer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import useAxios from "axios-hooks";
-import { useContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 export function PrinterWidgetConfig({ config, onChange }: WidgetConfig) {
     const [cfg, setCfg] = useState(config)

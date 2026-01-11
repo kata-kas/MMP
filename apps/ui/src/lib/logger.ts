@@ -3,6 +3,7 @@ const isDev = import.meta.env.DEV;
 export const logger = {
   log: (...args: unknown[]) => {
     if (isDev) {
+      // eslint-disable-next-line no-console
       console.log(...args);
     }
   },
@@ -18,6 +19,7 @@ export const logger = {
   },
   info: (...args: unknown[]) => {
     if (isDev) {
+      // eslint-disable-next-line no-console
       console.info(...args);
     }
   },

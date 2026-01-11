@@ -1,7 +1,6 @@
 import { Widget } from "@/dashboard/entities/WidgetType";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useContext } from "react";
 import { useSettings } from "@/core/settings/useSettings";
 import { Printer } from "@/printers/entities/Printer";
 import useAxios from "axios-hooks";

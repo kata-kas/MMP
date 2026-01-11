@@ -1,7 +1,6 @@
 import SSEContext from "@/core/sse/SSEContext";
 import { useId } from "react";
 import { useContext, useEffect, useState } from "react";
-import { logger } from "@/lib/logger";
 
 type RefresherProps = {
     projectUUID: string;
