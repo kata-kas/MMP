@@ -1,11 +1,11 @@
 import { useContext } from "react"
-import { SSEContext } from "../../SSEContext"
+import { SSEConnectionContext } from "../../SSEContext"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { IconMoodSmileBeam, IconSkull } from "@tabler/icons-react"
 
 export function StatusIcon({ className, ...props }: React.HTMLAttributes<HTMLButtonElement>) {
-    const { connected, loading, error } = useContext(SSEContext)
+    const { connected, loading, error } = useContext(SSEConnectionContext)
 
     return (
         <Button variant="ghost" size="icon" className={className} {...props}>

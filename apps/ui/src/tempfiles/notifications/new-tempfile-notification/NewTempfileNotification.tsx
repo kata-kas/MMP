@@ -1,11 +1,12 @@
-import SSEContext from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { toast } from "sonner";
 import { useId, useContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 export function NewTempfileNotification() {
     const subscriberId = useId();
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [message, setMessage] = useState({} as Record<string, unknown>)
     const [, setError] = useState<Error | null>(null);
     useEffect(() => {

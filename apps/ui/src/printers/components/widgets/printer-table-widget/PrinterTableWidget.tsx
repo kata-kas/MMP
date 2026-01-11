@@ -7,7 +7,7 @@ import { PrintProgressBar } from "../parts/print-progress-bar/PrintProgressBar";
 import Printer3dNozzleHeatOutlineIcon from "mdi-react/Printer3dNozzleHeatOutlineIcon";
 import { IconFile3d, IconPercentage, IconSkateboarding } from "@tabler/icons-react";
 import RadiatorDisabledIcon from "mdi-react/RadiatorDisabledIcon";
-import { SSEContext } from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { useCumulativeEvent } from "@/core/sse/useCumulativeEvent";
 import { useId } from 'react';
 import { useApiQuery } from "@/hooks/use-api-query";
@@ -19,7 +19,8 @@ export function PrinterTableWidget(w: Widget) {
         url: printerId ? `/printers/${printerId}` : '',
         enabled: !!printerId,
     })
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [extruder, setExtruder] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [heaterBed, setHeaterBed] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [job, setJob] = useCumulativeEvent<Job>({ progress: 0, fileName: "", message: "" });

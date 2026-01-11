@@ -1,4 +1,4 @@
-import SSEContext from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { useId } from "react";
 import { toast } from "sonner";
 import { useContext, useEffect, useState, useCallback } from "react";
@@ -11,7 +11,8 @@ type RefresherProps = {
 
 export function Refresher({ projectUUID }: RefresherProps) {
     const subscriberId = useId();
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [assetUpdate, setAssetUpdate] = useState({} as Record<string, unknown>)
     
     const handleError = useCallback((error: Error) => {

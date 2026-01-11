@@ -1,7 +1,8 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { SettingsContext } from "../settings/settingsContext";
-import { SSEContext } from "./SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "./SSEContext";
 import { SubscriptionManager, createSubsManager } from "./SubscriptionManager";
+import { Subscription } from "./SSEContext";
 
 export function SSEProvider({ children }: React.PropsWithChildren) {
     const { settings } = useContext(SettingsContext);
@@ -11,8 +12,6 @@ export function SSEProvider({ children }: React.PropsWithChildren) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
     const [connected, setConnected] = useState<boolean>(false);
-
-
 
     useEffect(() => {
         if (!settings.localBackend) {
@@ -43,11 +42,30 @@ export function SSEProvider({ children }: React.PropsWithChildren) {
         };
     }, [settings.localBackend])
 
+    const subscribe = useCallback((sub: Subscription) => {
+        return subManager?.subscribe(sub) ?? Promise.resolve(null);
+    }, [subManager]);
 
+    const unsubscribe = useCallback((subscriberId: string) => {
+        subManager?.unsubscribe(subscriberId);
+    }, [subManager]);
+
+    const connectionValue = useMemo(() => ({
+        connected,
+        loading,
+        error,
+    }), [connected, loading, error]);
+
+    const actionsValue = useMemo(() => ({
+        subscribe,
+        unsubscribe,
+    }), [subscribe, unsubscribe]);
 
     return (
-        <SSEContext.Provider value={useMemo(() => ({ connected, loading, error, subscribe: subManager?.subscribe, unsubscribe: subManager?.unsubscribe }), [connected, loading, error, subManager])}>
-            {children}
-        </SSEContext.Provider>
+        <SSEConnectionContext.Provider value={connectionValue}>
+            <SSEActionsContext.Provider value={actionsValue}>
+                {children}
+            </SSEActionsContext.Provider>
+        </SSEConnectionContext.Provider>
     )
 }

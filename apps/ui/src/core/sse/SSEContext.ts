@@ -7,14 +7,24 @@ export type Subscription = {
     callback: (data: unknown) => void
 }
 
-interface SSEContextType {
+interface SSEConnectionContextType {
     connected: boolean,
     loading: boolean,
     error: Error | null,
-    subscribe: (Subscription: Subscription) => Promise<Error | null>,
-    unsubscribe(subscriberId: string): void,
 }
 
-export const SSEContext = createContext<SSEContextType>({} as SSEContextType)
+interface SSEActionsContextType {
+    subscribe: (sub: Subscription) => Promise<Error | null>,
+    unsubscribe: (subscriberId: string) => void,
+}
 
-export default SSEContext;
+export const SSEConnectionContext = createContext<SSEConnectionContextType>({
+    connected: false,
+    loading: false,
+    error: null,
+})
+
+export const SSEActionsContext = createContext<SSEActionsContextType>({
+    subscribe: () => Promise.resolve(null),
+    unsubscribe: () => {},
+})

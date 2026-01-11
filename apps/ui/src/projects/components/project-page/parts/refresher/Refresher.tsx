@@ -1,4 +1,4 @@
-import SSEContext from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { useId } from "react";
 import { useContext, useEffect, useState } from "react";
 
@@ -9,7 +9,8 @@ type RefresherProps = {
 
 export function Refresher({ projectUUID, refresh }: RefresherProps) {
     const subscriberId = useId();
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [projectUpdate, setProjectUpdate] = useState({} as Record<string, unknown>)
     const [, setError] = useState<Error | null>(null);
     useEffect(() => {

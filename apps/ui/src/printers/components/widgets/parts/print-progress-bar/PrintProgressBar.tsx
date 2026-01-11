@@ -1,4 +1,4 @@
-import SSEContext from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { Job } from "@/printers/entities/Printer";
 import { Progress } from "@/components/ui/progress";
 import { useContext, useEffect } from "react";
@@ -10,7 +10,8 @@ interface PrintProgressBarProps {
 }
 export function PrintProgressBar({ printerUuid }: PrintProgressBarProps) {
     const subscriberId = useId();
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [job, setJob] = useCumulativeEvent<Job>({ progress: 0 });
 
     useEffect(() => {

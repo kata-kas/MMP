@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { Temp } from "../temp/Temp";
 import RadiatorDisabledIcon from "mdi-react/RadiatorDisabledIcon";
-import SSEContext from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { useCumulativeEvent } from "@/core/sse/useCumulativeEvent";
 import { Thermal } from "@/printers/entities/Printer";
 import { useContext, useEffect } from "react";
@@ -12,7 +12,8 @@ interface BedTempProps {
 
 export function BedTemp({ printerUuid }: BedTempProps) {
     const subscriberId = useId();
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [bed, setBed] = useCumulativeEvent<Thermal>({ temperature: 0, target: 0 });
     useEffect(() => {
         if (!connected) return;

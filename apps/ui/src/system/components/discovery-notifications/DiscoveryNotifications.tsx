@@ -1,4 +1,4 @@
-import SSEContext from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { useId } from "react";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
@@ -6,7 +6,8 @@ import { useContext, useEffect, useState } from "react";
 
 export function DiscoveryNotifications() {
     const subscriberId = useId();
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [toastId, setToastId] = useState<string | number | null>(null);
     const [message, setMessage] = useState({} as Record<string, unknown>)
     const [, setError] = useState<Error | null>(null);

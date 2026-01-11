@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { Temp } from "../temp/Temp";
 import Printer3dNozzleHeatOutlineIcon from "mdi-react/Printer3dNozzleHeatOutlineIcon";
-import SSEContext from "@/core/sse/SSEContext";
+import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
 import { useCumulativeEvent } from "@/core/sse/useCumulativeEvent";
 import { Thermal } from "@/printers/entities/Printer";
 import { useContext, useEffect } from "react";
@@ -12,7 +12,8 @@ interface HeaterTempProps {
 
 export function ExtruderTemp({ printerUuid }: HeaterTempProps) {
     const subscriberId = useId();
-    const { connected, subscribe, unsubscribe } = useContext(SSEContext)
+    const { connected } = useContext(SSEConnectionContext);
+    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
     const [extruder, setExtruder] = useCumulativeEvent<Thermal>({ temperature: 0, target: 0 });
     useEffect(() => {
         if (!connected) return;
