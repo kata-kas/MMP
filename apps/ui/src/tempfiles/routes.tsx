@@ -1,4 +1,6 @@
-import {TempFiles} from "./components/temp-files/TempFiles.tsx";
+import { lazy } from "react";
+
+const TempFiles = lazy(() => import("./components/temp-files/TempFiles.tsx").then(m => ({ default: m.TempFiles })));
 
 export const routes = [
     {

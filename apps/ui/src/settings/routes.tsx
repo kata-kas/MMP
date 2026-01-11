@@ -1,4 +1,6 @@
-import { SettingsPage } from "./components/settings-page/SettingsPage";
+import { lazy } from "react";
+
+const SettingsPage = lazy(() => import("./components/settings-page/SettingsPage").then(m => ({ default: m.SettingsPage })));
 
 export const routes = [
     {

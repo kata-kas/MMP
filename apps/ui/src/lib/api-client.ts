@@ -3,6 +3,7 @@ import { useContext, useMemo } from 'react';
 import { SettingsContext } from '@/core/settings/settingsContext';
 import { logger } from './logger';
 import { toast } from 'sonner';
+import { getErrorConfig } from '@/core/axios-error-handler/error-config';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -35,22 +36,14 @@ class ApiClient {
         if (code !== 'ERR_CANCELED') {
           logger.error('API error:', error);
           
-          let message = 'An error occurred';
-          if (error.response) {
-            const status = error.response.status;
-            message = error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data
-              ? (error.response.data as { message: string }).message
-              : error.message || `Request failed with status ${status}`;
-          } else if (error.request) {
-            message = error.message || 'Network error - no response received';
-          } else {
-            message = error.message || 'Request setup error';
-          }
+          const config = getErrorConfig(error, false);
           
-          toast.error('Ops... An error occurred!', {
-            description: message,
-            duration: Infinity,
-          });
+          if (config.severity === 'toast') {
+            toast.error(config.title, {
+              description: config.description,
+              duration: config.duration,
+            });
+          }
         }
         
         return Promise.reject(error);

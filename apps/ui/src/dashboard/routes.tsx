@@ -1,4 +1,6 @@
-import { Dashboard } from "./components/dashboard/Dashboard.tsx";
+import { lazy } from "react";
+
+const Dashboard = lazy(() => import("./components/dashboard/Dashboard.tsx").then(m => ({ default: m.Dashboard })));
 
 export const routes = [
     {

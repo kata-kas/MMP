@@ -7,7 +7,7 @@ import { Icon3dRotate, IconFile, IconFile3d, IconFileTypePdf, IconZoomScan } fro
 import { DropDownMenu } from "../parts/drop-down-menu/DropDownMenu";
 import { SetAsMain } from "../parts/set-as-main/SetAsMain";
 import { SettingsContext } from "@/core/settings/settingsContext";
-import { useCallback, useContext, useState } from "react";
+import { memo, useCallback, useContext, useState } from "react";
 import { Lightbox } from "react-modal-image";
 import { SelectBtn } from "../parts/select-btn/SelectBtn";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ iconMap.set('.pdf', <IconFileTypePdf />);
 iconMap.set('.jpg', <IconFile />);
 iconMap.set('.stl', <IconFile3d />);
 
-export function AssetCard({ asset, focused, onFocused, onDelete, onChange, view3d, onView3dChange }: AssetCardProps) {
+function AssetCardComponent({ asset, focused, onFocused, onDelete, onChange, view3d, onView3dChange }: AssetCardProps) {
     const { settings, ready } = useContext(SettingsContext);
     const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState(false);
@@ -112,3 +112,15 @@ export function AssetCard({ asset, focused, onFocused, onDelete, onChange, view3
             </Card>
         </>)
 }
+
+export const AssetCard = memo(AssetCardComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.asset.id === nextProps.asset.id &&
+        prevProps.asset.image_id === nextProps.asset.image_id &&
+        prevProps.asset.label === nextProps.asset.label &&
+        prevProps.asset.name === nextProps.asset.name &&
+        prevProps.asset.extension === nextProps.asset.extension &&
+        prevProps.focused === nextProps.focused &&
+        prevProps.view3d === nextProps.view3d
+    );
+});

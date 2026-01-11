@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Asset, AssetType } from "@/assets/entities/Assets.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ModelDetailPane } from "@/assets/components/model/model-detail-pane/ModelDetailPane.tsx";
 import { IconSettings, IconFiles } from "@tabler/icons-react";
 import { X } from "lucide-react";
@@ -69,6 +69,10 @@ export function ProjectPageBody({ projectUuid, project, onProjectChange }: Proje
         setSelectedAsset(asset)
     }
 
+    const filteredAssets = useMemo(() => {
+        return assets?.filter(asset => asset.origin !== "render" && (typeFilter === 'all' || asset.asset_type === typeFilter)) || [];
+    }, [assets, typeFilter]);
+
     return (
         <>
             {error && !loading && (
@@ -119,8 +123,7 @@ export function ProjectPageBody({ projectUuid, project, onProjectChange }: Proje
                                 />
                             ))}
 
-                        {assets?.filter(asset => asset.origin !== "render" && (typeFilter === 'all' || asset.asset_type === typeFilter))
-                            .map(a => (
+                        {filteredAssets.map(a => (
                                 <AssetCard 
                                     key={a.id}
                                     asset={a}

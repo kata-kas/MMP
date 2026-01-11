@@ -1,5 +1,7 @@
-import { EditPrinterPage } from "./components/edit-printer-page/EditPrinterPage";
-import {PrintersPage} from "./components/printers-page/PrintersPage";
+import { lazy } from "react";
+
+const EditPrinterPage = lazy(() => import("./components/edit-printer-page/EditPrinterPage").then(m => ({ default: m.EditPrinterPage })));
+const PrintersPage = lazy(() => import("./components/printers-page/PrintersPage").then(m => ({ default: m.PrintersPage })));
 
 export const routes = [
     {
