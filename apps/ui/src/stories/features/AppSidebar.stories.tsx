@@ -1,41 +1,41 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { AppSidebar } from '@/components/app-sidebar';
-import { SettingsProvider } from '@/core/settings/settingsProvider';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import type { Meta, StoryObj } from "@storybook/react";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { SettingsProvider } from "@/core/settings/settingsProvider";
 
 const meta: Meta<typeof AppSidebar> = {
-  title: 'Features/AppSidebar',
-  component: AppSidebar,
-  decorators: [
-    (Story) => (
-      <SettingsProvider loading={<div>Loading...</div>}>
-        <SidebarProvider>
-          <div className="flex h-screen">
-            <Story />
-          </div>
-        </SidebarProvider>
-      </SettingsProvider>
-    ),
-  ],
-  parameters: {
-    layout: 'fullscreen',
-  },
+	title: "Features/AppSidebar",
+	component: AppSidebar,
+	decorators: [
+		(Story) => (
+			<SettingsProvider loading={<div>Loading...</div>}>
+				<SidebarProvider>
+					<div className="flex h-screen">
+						<Story />
+					</div>
+				</SidebarProvider>
+			</SettingsProvider>
+		),
+	],
+	parameters: {
+		layout: "fullscreen",
+	},
 };
 
 export default meta;
 type Story = StoryObj<typeof AppSidebar>;
 
 export const Default: Story = {
-  args: {},
+	args: {},
 };
 
 export const Collapsed: Story = {
-  args: {},
-  decorators: [
-    (Story) => (
-      <SidebarProvider defaultOpen={false}>
-        <Story />
-      </SidebarProvider>
-    ),
-  ],
+	args: {},
+	decorators: [
+		(Story) => (
+			<SidebarProvider defaultOpen={false}>
+				<Story />
+			</SidebarProvider>
+		),
+	],
 };

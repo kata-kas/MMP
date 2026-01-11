@@ -1,5 +1,5 @@
-import { useToast } from './ToastContext';
+import { useToast } from "./ToastContext";
 
 export function useToastManager() {
-    return useToast();
+	return useToast();
 }

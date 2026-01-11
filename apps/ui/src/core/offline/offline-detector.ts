@@ -1,6 +1,6 @@
-import { useOffline } from './OfflineContext';
+import { useOffline } from "./OfflineContext";
 
 export function useOfflineState() {
-    const { isOffline } = useOffline();
-    return isOffline;
+	const { isOffline } = useOffline();
+	return isOffline;
 }

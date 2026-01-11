@@ -1,40 +1,40 @@
 export interface AgentSettings {
-    core: Core
-    server: Server
-    library: Library
-    render: Render
-    integrations: Integrations
+	core: Core;
+	server: Server;
+	library: Library;
+	render: Render;
+	integrations: Integrations;
 }
 
 export interface Core {
-    log: Log
+	log: Log;
 }
 
 export interface Log {
-    enable_file: boolean
-    path: string
+	enable_file: boolean;
+	path: string;
 }
 
 export interface Server {
-    port: number
+	port: number;
 }
 
 export interface Library {
-    path: string
-    blacklist: string[]
-    ignore_dot_files: boolean
+	path: string;
+	blacklist: string[];
+	ignore_dot_files: boolean;
 }
 
 export interface Render {
-    max_workers: number
-    model_color: string
-    background_color: string
+	max_workers: number;
+	model_color: string;
+	background_color: string;
 }
 
 export interface Integrations {
-    thingiverse: Thingiverse
+	thingiverse: Thingiverse;
 }
 
 export interface Thingiverse {
-    token: string
+	token: string;
 }

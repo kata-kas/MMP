@@ -1,5 +1,5 @@
 export const mockHandlers = {
-  onFocused: () => {},
-  onDelete: () => {},
-  onChange: () => {},
+	onFocused: () => {},
+	onDelete: () => {},
+	onChange: () => {},
 };

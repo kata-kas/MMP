@@ -1,53 +1,56 @@
-import { SSEConnectionContext, SSEActionsContext } from "@/core/sse/SSEContext";
-import { useId } from "react";
-import { toast } from "sonner";
-import { useContext, useEffect, useState, useCallback } from "react";
+import { useCallback, useContext, useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { SSEActionsContext, SSEConnectionContext } from "@/core/sse/SSEContext";
 import { logger } from "@/lib/logger";
 
 type RefresherProps = {
-    projectUUID: string;
-}
+	projectUUID: string;
+};
 
 export function Refresher({ projectUUID }: RefresherProps) {
-    const subscriberId = useId();
-    const { connected } = useContext(SSEConnectionContext);
-    const { subscribe, unsubscribe } = useContext(SSEActionsContext);
-    const [assetUpdate, setAssetUpdate] = useState({} as Record<string, unknown>)
-    
-    const handleError = useCallback((error: Error) => {
-        logger.error('SSE subscription error', error);
-    }, []);
+	const subscriberId = useId();
+	const { connected } = useContext(SSEConnectionContext);
+	const { subscribe, unsubscribe } = useContext(SSEActionsContext);
+	const [assetUpdate, setAssetUpdate] = useState({} as Record<string, unknown>);
 
-    useEffect(() => {
-        if (!connected) return;
-        setAssetUpdate({})
-        const subscription = {
-            subscriberId,
-            provider: `system/events`,
-        }
-        subscribe({
-            ...subscription,
-            event: `system.state.asset.event`,
-            callback: setAssetUpdate
-        }).catch(handleError);
-        return () => {
-            unsubscribe(subscriberId)
-        }
-    }, [connected, subscriberId, subscribe, unsubscribe, handleError])
+	const handleError = useCallback((error: Error) => {
+		logger.error("SSE subscription error", error);
+	}, []);
 
-    useEffect(() => {
-        if (!assetUpdate.state) return;
-        const state = assetUpdate.state as Record<string, unknown>;
-        if (projectUUID == state?.projectUUID) {
-            toast.info(`Assets have changed`, {
-                description: (
-                    <Link to={`/projects/${projectUUID}`} className="underline" reloadDocument>
-                        Refresh
-                    </Link>
-                ),
-            })
-        }
-    }, [assetUpdate, projectUUID])
-    return (<></>)
+	useEffect(() => {
+		if (!connected) return;
+		setAssetUpdate({});
+		const subscription = {
+			subscriberId,
+			provider: `system/events`,
+		};
+		subscribe({
+			...subscription,
+			event: `system.state.asset.event`,
+			callback: setAssetUpdate,
+		}).catch(handleError);
+		return () => {
+			unsubscribe(subscriberId);
+		};
+	}, [connected, subscriberId, subscribe, unsubscribe, handleError]);
+
+	useEffect(() => {
+		if (!assetUpdate.state) return;
+		const state = assetUpdate.state as Record<string, unknown>;
+		if (projectUUID === state?.projectUUID) {
+			toast.info(`Assets have changed`, {
+				description: (
+					<Link
+						to={`/projects/${projectUUID}`}
+						className="underline"
+						reloadDocument
+					>
+						Refresh
+					</Link>
+				),
+			});
+		}
+	}, [assetUpdate, projectUUID]);
+	return null;
 }

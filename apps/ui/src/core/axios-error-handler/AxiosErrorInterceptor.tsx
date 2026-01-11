@@ -1,27 +1,31 @@
-import { useEffect } from 'react';
-import { setupAxiosErrorInterceptor } from './setup-axios-interceptor';
-import { useToast } from '../toast/ToastContext';
-import { useOffline } from '../offline/OfflineContext';
+import { useEffect } from "react";
+import { useOffline } from "../offline/OfflineContext";
+import { useToast } from "../toast/ToastContext";
+import { setupAxiosErrorInterceptor } from "./setup-axios-interceptor";
 
 interface AxiosErrorInterceptorProps {
-    showErrorToast?: (options: { title: string; description: string; duration: number }) => void;
-    isOffline?: boolean;
+	showErrorToast?: (options: {
+		title: string;
+		description: string;
+		duration: number;
+	}) => void;
+	isOffline?: boolean;
 }
 
-export function AxiosErrorInterceptor({ 
-    showErrorToast: injectedShowErrorToast,
-    isOffline: injectedIsOffline 
+export function AxiosErrorInterceptor({
+	showErrorToast: injectedShowErrorToast,
+	isOffline: injectedIsOffline,
 }: AxiosErrorInterceptorProps = {}) {
-    const toastContext = useToast();
-    const offlineContext = useOffline();
-    
-    const showErrorToast = injectedShowErrorToast ?? toastContext.showErrorToast;
-    const isOffline = injectedIsOffline ?? offlineContext.isOffline;
+	const toastContext = useToast();
+	const offlineContext = useOffline();
 
-    useEffect(() => {
-        const cleanup = setupAxiosErrorInterceptor(showErrorToast, isOffline);
-        return cleanup;
-    }, [showErrorToast, isOffline]);
+	const showErrorToast = injectedShowErrorToast ?? toastContext.showErrorToast;
+	const isOffline = injectedIsOffline ?? offlineContext.isOffline;
 
-    return null;
+	useEffect(() => {
+		const cleanup = setupAxiosErrorInterceptor(showErrorToast, isOffline);
+		return cleanup;
+	}, [showErrorToast, isOffline]);
+
+	return null;
 }

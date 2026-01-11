@@ -1,30 +1,30 @@
 import { createContext } from "react";
 
 export type Subscription = {
-    subscriberId: string,
-    provider: string,
-    event: string,
-    callback: (data: unknown) => void
-}
+	subscriberId: string;
+	provider: string;
+	event: string;
+	callback: (data: unknown) => void;
+};
 
 interface SSEConnectionContextType {
-    connected: boolean,
-    loading: boolean,
-    error: Error | null,
+	connected: boolean;
+	loading: boolean;
+	error: Error | null;
 }
 
 interface SSEActionsContextType {
-    subscribe: (sub: Subscription) => Promise<Error | null>,
-    unsubscribe: (subscriberId: string) => void,
+	subscribe: (sub: Subscription) => Promise<Error | null>;
+	unsubscribe: (subscriberId: string) => void;
 }
 
 export const SSEConnectionContext = createContext<SSEConnectionContextType>({
-    connected: false,
-    loading: false,
-    error: null,
-})
+	connected: false,
+	loading: false,
+	error: null,
+});
 
 export const SSEActionsContext = createContext<SSEActionsContextType>({
-    subscribe: () => Promise.resolve(null),
-    unsubscribe: () => {},
-})
+	subscribe: () => Promise.resolve(null),
+	unsubscribe: () => {},
+});

@@ -1,87 +1,116 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig, AxiosError } from 'axios';
-import { useContext, useMemo } from 'react';
-import { SettingsContext } from '@/core/settings/settingsContext';
-import { logger } from './logger';
-import { toast } from 'sonner';
-import { getErrorConfig } from '@/core/axios-error-handler/error-config';
+import axios, {
+	type AxiosError,
+	type AxiosInstance,
+	type AxiosRequestConfig,
+	type AxiosResponse,
+	type InternalAxiosRequestConfig,
+} from "axios";
+import { useContext, useMemo } from "react";
+import { toast } from "sonner";
+import { getErrorConfig } from "@/core/axios-error-handler/error-config";
+import { SettingsContext } from "@/core/settings/settingsContext";
+import { logger } from "./logger";
 
 class ApiClient {
-  private client: AxiosInstance;
+	private client: AxiosInstance;
 
-  constructor(baseURL: string) {
-    this.client = axios.create({
-      baseURL,
-      timeout: 30000,
-    });
+	constructor(baseURL: string) {
+		this.client = axios.create({
+			baseURL,
+			timeout: 30000,
+		});
 
-    this.setupInterceptors();
-  }
+		this.setupInterceptors();
+	}
 
-  private setupInterceptors() {
-    this.client.interceptors.request.use(
-      (config: InternalAxiosRequestConfig) => {
-        return config;
-      },
-      (error) => {
-        logger.error('Request error:', error);
-        return Promise.reject(error);
-      }
-    );
+	private setupInterceptors() {
+		this.client.interceptors.request.use(
+			(config: InternalAxiosRequestConfig) => {
+				return config;
+			},
+			(error) => {
+				logger.error("Request error:", error);
+				return Promise.reject(error);
+			},
+		);
 
-    this.client.interceptors.response.use(
-      (response: AxiosResponse) => response,
-      (error: AxiosError) => {
-        const code = (error as { code?: string }).code;
-        
-        if (code !== 'ERR_CANCELED') {
-          logger.error('API error:', error);
-          
-          const config = getErrorConfig(error, false);
-          
-          if (config.severity === 'toast') {
-            toast.error(config.title, {
-              description: config.description,
-              duration: config.duration,
-            });
-          }
-        }
-        
-        return Promise.reject(error);
-      }
-    );
-  }
+		this.client.interceptors.response.use(
+			(response: AxiosResponse) => response,
+			(error: AxiosError) => {
+				const code = (error as { code?: string }).code;
 
-  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.get<T>(url, config);
-  }
+				if (code !== "ERR_CANCELED") {
+					logger.error("API error:", error);
 
-  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.post<T>(url, data, config);
-  }
+					const config = getErrorConfig(error, false);
 
-  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.put<T>(url, data, config);
-  }
+					if (config.severity === "toast") {
+						toast.error(config.title, {
+							description: config.description,
+							duration: config.duration,
+						});
+					}
+				}
 
-  patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.patch<T>(url, data, config);
-  }
+				return Promise.reject(error);
+			},
+		);
+	}
 
-  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.delete<T>(url, config);
-  }
+	get<T = unknown>(
+		url: string,
+		config?: AxiosRequestConfig,
+	): Promise<AxiosResponse<T>> {
+		return this.client.get<T>(url, config);
+	}
+
+	post<T = unknown>(
+		url: string,
+		data?: unknown,
+		config?: AxiosRequestConfig,
+	): Promise<AxiosResponse<T>> {
+		return this.client.post<T>(url, data, config);
+	}
+
+	put<T = unknown>(
+		url: string,
+		data?: unknown,
+		config?: AxiosRequestConfig,
+	): Promise<AxiosResponse<T>> {
+		return this.client.put<T>(url, data, config);
+	}
+
+	patch<T = unknown>(
+		url: string,
+		data?: unknown,
+		config?: AxiosRequestConfig,
+	): Promise<AxiosResponse<T>> {
+		return this.client.patch<T>(url, data, config);
+	}
+
+	delete<T = unknown>(
+		url: string,
+		config?: AxiosRequestConfig,
+	): Promise<AxiosResponse<T>> {
+		return this.client.delete<T>(url, config);
+	}
 }
 
 const clientCache = new Map<string, ApiClient>();
 
 export function useApiClient(): ApiClient {
-  const { settings, ready } = useContext(SettingsContext);
-  
-  return useMemo(() => {
-    const baseURL = ready && settings?.localBackend ? settings.localBackend : '/api';
-    if (!clientCache.has(baseURL)) {
-      clientCache.set(baseURL, new ApiClient(baseURL));
-    }
-    return clientCache.get(baseURL)!;
-  }, [settings?.localBackend, ready]);
+	const { settings, ready } = useContext(SettingsContext);
+
+	return useMemo(() => {
+		const baseURL =
+			ready && settings?.localBackend ? settings.localBackend : "/api";
+		if (!clientCache.has(baseURL)) {
+			clientCache.set(baseURL, new ApiClient(baseURL));
+		}
+		const client = clientCache.get(baseURL);
+		if (!client) {
+			throw new Error(`Failed to get API client for ${baseURL}`);
+		}
+		return client;
+	}, [settings?.localBackend, ready]);
 }

@@ -1,25 +1,35 @@
 export interface Printer {
-    uuid: string
-    name: string
-    type: string
-    camera_url: string
-    address: string
-    status: string
-    state: string
-    version: string
-    apiKey?: string
+	uuid: string;
+	name: string;
+	type: string;
+	camera_url: string;
+	address: string;
+	status: string;
+	state: string;
+	version: string;
+	apiKey?: string;
 }
 
 export interface Thermal {
-    temperature?: number
-    target?: number
+	temperature?: number;
+	target?: number;
 }
 export interface Job {
-    progress: number
-    message: string,
-    fileName: string,
+	progress: number;
+	message: string;
+	fileName: string;
 }
 
-export const printerTypes = new Map<string, { type: string; name: string; logo: string }>([["klipper", { type: 'klipper', name: 'Klipper', logo: 'images/klipper-logo.png' }], ["octoPrint", { type: 'octoPrint', name: 'op', logo: 'images/octoprint-logo.png' }]])
-
-
+export const printerTypes = new Map<
+	string,
+	{ type: string; name: string; logo: string }
+>([
+	[
+		"klipper",
+		{ type: "klipper", name: "Klipper", logo: "images/klipper-logo.png" },
+	],
+	[
+		"octoPrint",
+		{ type: "octoPrint", name: "op", logo: "images/octoprint-logo.png" },
+	],
+]);

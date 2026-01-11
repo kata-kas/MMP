@@ -1,18 +1,25 @@
-import { createContext, useContext, useRef, useCallback, useEffect, useMemo } from 'react';
-import { toast as sonnerToast } from 'sonner';
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+} from "react";
+import { toast as sonnerToast } from "sonner";
 
 interface ToastOptions {
-    title: string;
-    description: string;
-    duration: number;
+	title: string;
+	description: string;
+	duration: number;
 }
 
 interface CacheEntry {
-    timestamp: number;
+	timestamp: number;
 }
 
 interface ToastContextValue {
-    showErrorToast: (options: ToastOptions) => void;
+	showErrorToast: (options: ToastOptions) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -29,104 +36,120 @@ const MAX_QUEUE_DEPTH = 20;
 const CLEANUP_INTERVAL = 5000;
 
 export function ToastProvider({ children }: React.PropsWithChildren) {
-    const toastCacheRef = useRef(new Map<string, CacheEntry>());
-    const toastCountRef = useRef(0);
-    const lastResetTimeRef = useRef(Date.now());
-    const queueDepthRef = useRef(0);
-    const cleanupIntervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const toastCacheRef = useRef(new Map<string, CacheEntry>());
+	const toastCountRef = useRef(0);
+	const lastResetTimeRef = useRef(Date.now());
+	const queueDepthRef = useRef(0);
+	const cleanupIntervalIdRef = useRef<ReturnType<typeof setInterval> | null>(
+		null,
+	);
 
-    const cleanupCache = useCallback(() => {
-        const now = Date.now();
-        const cache = toastCacheRef.current;
-        
-        if (now - lastResetTimeRef.current > TOAST_DEDUP_WINDOW) {
-            toastCountRef.current = 0;
-            lastResetTimeRef.current = now;
-        }
+	const cleanupCache = useCallback(() => {
+		const now = Date.now();
+		const cache = toastCacheRef.current;
 
-        if (cache.size > MAX_CACHE_SIZE) {
-            const entries = Array.from(cache.entries());
-            entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-            const toDelete = entries.slice(0, entries.length - MAX_CACHE_SIZE);
-            toDelete.forEach(([key]) => cache.delete(key));
-        } else {
-            const cutoff = now - TOAST_DEDUP_WINDOW;
-            for (const [key, entry] of cache.entries()) {
-                if (entry.timestamp < cutoff) {
-                    cache.delete(key);
-                }
-            }
-        }
-    }, []);
+		if (now - lastResetTimeRef.current > TOAST_DEDUP_WINDOW) {
+			toastCountRef.current = 0;
+			lastResetTimeRef.current = now;
+		}
 
-    useEffect(() => {
-        if (cleanupIntervalIdRef.current === null) {
-            cleanupIntervalIdRef.current = setInterval(cleanupCache, CLEANUP_INTERVAL);
-        }
+		if (cache.size > MAX_CACHE_SIZE) {
+			const entries = Array.from(cache.entries());
+			entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+			const toDelete = entries.slice(0, entries.length - MAX_CACHE_SIZE);
+			toDelete.forEach(([key]) => {
+				cache.delete(key);
+			});
+		} else {
+			const cutoff = now - TOAST_DEDUP_WINDOW;
+			for (const [key, entry] of cache.entries()) {
+				if (entry.timestamp < cutoff) {
+					cache.delete(key);
+				}
+			}
+		}
+	}, []);
 
-        return () => {
-            if (cleanupIntervalIdRef.current !== null) {
-                clearInterval(cleanupIntervalIdRef.current);
-                cleanupIntervalIdRef.current = null;
-            }
-        };
-    }, [cleanupCache]);
+	useEffect(() => {
+		if (cleanupIntervalIdRef.current === null) {
+			cleanupIntervalIdRef.current = setInterval(
+				cleanupCache,
+				CLEANUP_INTERVAL,
+			);
+		}
 
-    const getCacheKey = useCallback((title: string, description: string): string => {
-        return `${title}:${description}`;
-    }, []);
+		return () => {
+			if (cleanupIntervalIdRef.current !== null) {
+				clearInterval(cleanupIntervalIdRef.current);
+				cleanupIntervalIdRef.current = null;
+			}
+		};
+	}, [cleanupCache]);
 
-    const showErrorToast = useCallback((options: ToastOptions) => {
-        const now = Date.now();
-        
-        if (now - lastResetTimeRef.current > TOAST_DEDUP_WINDOW) {
-            toastCountRef.current = 0;
-            lastResetTimeRef.current = now;
-        }
+	const getCacheKey = useCallback(
+		(title: string, description: string): string => {
+			return `${title}:${description}`;
+		},
+		[],
+	);
 
-        if (queueDepthRef.current >= MAX_QUEUE_DEPTH) {
-            return;
-        }
+	const showErrorToast = useCallback(
+		(options: ToastOptions) => {
+			const now = Date.now();
 
-        if (toastCountRef.current >= MAX_TOASTS_PER_WINDOW) {
-            return;
-        }
+			if (now - lastResetTimeRef.current > TOAST_DEDUP_WINDOW) {
+				toastCountRef.current = 0;
+				lastResetTimeRef.current = now;
+			}
 
-        const cacheKey = getCacheKey(options.title, options.description);
-        const entry = toastCacheRef.current.get(cacheKey);
+			if (queueDepthRef.current >= MAX_QUEUE_DEPTH) {
+				return;
+			}
 
-        if (entry !== undefined && now - entry.timestamp < TOAST_DEDUP_WINDOW) {
-            return;
-        }
+			if (toastCountRef.current >= MAX_TOASTS_PER_WINDOW) {
+				return;
+			}
 
-        toastCacheRef.current.set(cacheKey, { timestamp: now });
-        toastCountRef.current++;
-        queueDepthRef.current++;
+			const cacheKey = getCacheKey(options.title, options.description);
+			const entry = toastCacheRef.current.get(cacheKey);
 
-        sonnerToast.error(options.title, {
-            description: options.description,
-            duration: options.duration,
-            onDismiss: () => {
-                queueDepthRef.current = Math.max(0, queueDepthRef.current - 1);
-            },
-        });
-    }, [getCacheKey]);
+			if (entry !== undefined && now - entry.timestamp < TOAST_DEDUP_WINDOW) {
+				return;
+			}
 
-    const contextValue = useMemo(() => ({
-        showErrorToast,
-    }), [showErrorToast]);
+			toastCacheRef.current.set(cacheKey, { timestamp: now });
+			toastCountRef.current++;
+			queueDepthRef.current++;
 
-    return (
-        <ToastContext.Provider value={contextValue}>
-            {children}
-        </ToastContext.Provider>
-    );
+			sonnerToast.error(options.title, {
+				description: options.description,
+				duration: options.duration,
+				onDismiss: () => {
+					queueDepthRef.current = Math.max(0, queueDepthRef.current - 1);
+				},
+			});
+		},
+		[getCacheKey],
+	);
+
+	const contextValue = useMemo(
+		() => ({
+			showErrorToast,
+		}),
+		[showErrorToast],
+	);
+
+	return (
+		<ToastContext.Provider value={contextValue}>
+			{children}
+		</ToastContext.Provider>
+	);
 }
 
 export function useToast(): ToastContextValue {
-    const context = useContext(ToastContext);
-    if (!context) {
-        throw new Error('useToast must be used within ToastProvider');
-    }
-    return context;
+	const context = useContext(ToastContext);
+	if (!context) {
+		throw new Error("useToast must be used within ToastProvider");
+	}
+	return context;
 }

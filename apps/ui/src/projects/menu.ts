@@ -1,5 +1,5 @@
-import {IconFolders} from "@tabler/icons-react";
+import { IconFolders } from "@tabler/icons-react";
 
 export const menuItems = [
-    {icon: IconFolders, label: 'Projects', href: 'projects'},
-]
+	{ icon: IconFolders, label: "Projects", href: "projects" },
+];

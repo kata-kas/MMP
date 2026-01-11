@@ -1,140 +1,148 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import { OfflineProvider, useOffline } from './OfflineContext';
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { OfflineProvider, useOffline } from "./OfflineContext";
 
 function TestComponent() {
-    const { isOffline } = useOffline();
-    return <div>{isOffline ? 'Offline' : 'Online'}</div>;
+	const { isOffline } = useOffline();
+	return <div>{isOffline ? "Offline" : "Online"}</div>;
 }
 
-describe('OfflineProvider', () => {
-    let originalOnLine: boolean;
+describe("OfflineProvider", () => {
+	let originalOnLine: boolean;
 
-    beforeEach(() => {
-        originalOnLine = navigator.onLine;
-        Object.defineProperty(navigator, 'onLine', {
-            writable: true,
-            configurable: true,
-            value: true,
-        });
-    });
+	beforeEach(() => {
+		originalOnLine = navigator.onLine;
+		Object.defineProperty(navigator, "onLine", {
+			writable: true,
+			configurable: true,
+			value: true,
+		});
+	});
 
-    afterEach(() => {
-        Object.defineProperty(navigator, 'onLine', {
-            writable: true,
-            configurable: true,
-            value: originalOnLine,
-        });
-    });
+	afterEach(() => {
+		Object.defineProperty(navigator, "onLine", {
+			writable: true,
+			configurable: true,
+			value: originalOnLine,
+		});
+	});
 
-    it('should provide isOffline state via context', () => {
-        render(
-            <OfflineProvider>
-                <TestComponent />
-            </OfflineProvider>
-        );
+	it("should provide isOffline state via context", () => {
+		render(
+			<OfflineProvider>
+				<TestComponent />
+			</OfflineProvider>,
+		);
 
-        expect(screen.getByText('Online')).toBeInTheDocument();
-    });
+		expect(screen.getByText("Online")).toBeInTheDocument();
+	});
 
-    it('should initialize with current navigator.onLine state', () => {
-        Object.defineProperty(navigator, 'onLine', {
-            writable: true,
-            configurable: true,
-            value: false,
-        });
+	it("should initialize with current navigator.onLine state", () => {
+		Object.defineProperty(navigator, "onLine", {
+			writable: true,
+			configurable: true,
+			value: false,
+		});
 
-        render(
-            <OfflineProvider>
-                <TestComponent />
-            </OfflineProvider>
-        );
+		render(
+			<OfflineProvider>
+				<TestComponent />
+			</OfflineProvider>,
+		);
 
-        expect(screen.getByText('Offline')).toBeInTheDocument();
-    });
+		expect(screen.getByText("Offline")).toBeInTheDocument();
+	});
 
-    it('should update state when online event fires', async () => {
-        Object.defineProperty(navigator, 'onLine', {
-            writable: true,
-            configurable: true,
-            value: false,
-        });
+	it("should update state when online event fires", async () => {
+		Object.defineProperty(navigator, "onLine", {
+			writable: true,
+			configurable: true,
+			value: false,
+		});
 
-        render(
-            <OfflineProvider>
-                <TestComponent />
-            </OfflineProvider>
-        );
+		render(
+			<OfflineProvider>
+				<TestComponent />
+			</OfflineProvider>,
+		);
 
-        expect(screen.getByText('Offline')).toBeInTheDocument();
+		expect(screen.getByText("Offline")).toBeInTheDocument();
 
-        Object.defineProperty(navigator, 'onLine', {
-            writable: true,
-            configurable: true,
-            value: true,
-        });
+		Object.defineProperty(navigator, "onLine", {
+			writable: true,
+			configurable: true,
+			value: true,
+		});
 
-        act(() => {
-            window.dispatchEvent(new Event('online'));
-        });
+		act(() => {
+			window.dispatchEvent(new Event("online"));
+		});
 
-        await waitFor(() => {
-            expect(screen.getByText('Online')).toBeInTheDocument();
-        });
-    });
+		await waitFor(() => {
+			expect(screen.getByText("Online")).toBeInTheDocument();
+		});
+	});
 
-    it('should update state when offline event fires', async () => {
-        Object.defineProperty(navigator, 'onLine', {
-            writable: true,
-            configurable: true,
-            value: true,
-        });
+	it("should update state when offline event fires", async () => {
+		Object.defineProperty(navigator, "onLine", {
+			writable: true,
+			configurable: true,
+			value: true,
+		});
 
-        render(
-            <OfflineProvider>
-                <TestComponent />
-            </OfflineProvider>
-        );
+		render(
+			<OfflineProvider>
+				<TestComponent />
+			</OfflineProvider>,
+		);
 
-        expect(screen.getByText('Online')).toBeInTheDocument();
+		expect(screen.getByText("Online")).toBeInTheDocument();
 
-        Object.defineProperty(navigator, 'onLine', {
-            writable: true,
-            configurable: true,
-            value: false,
-        });
+		Object.defineProperty(navigator, "onLine", {
+			writable: true,
+			configurable: true,
+			value: false,
+		});
 
-        act(() => {
-            window.dispatchEvent(new Event('offline'));
-        });
+		act(() => {
+			window.dispatchEvent(new Event("offline"));
+		});
 
-        await waitFor(() => {
-            expect(screen.getByText('Offline')).toBeInTheDocument();
-        });
-    });
+		await waitFor(() => {
+			expect(screen.getByText("Offline")).toBeInTheDocument();
+		});
+	});
 
-    it('should cleanup event listeners on unmount', () => {
-        const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
-        
-        const { unmount } = render(
-            <OfflineProvider>
-                <TestComponent />
-            </OfflineProvider>
-        );
+	it("should cleanup event listeners on unmount", () => {
+		const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
 
-        unmount();
+		const { unmount } = render(
+			<OfflineProvider>
+				<TestComponent />
+			</OfflineProvider>,
+		);
 
-        expect(removeEventListenerSpy).toHaveBeenCalledWith('online', expect.any(Function));
-        expect(removeEventListenerSpy).toHaveBeenCalledWith('offline', expect.any(Function));
-    });
+		unmount();
 
-    it('should throw error when useOffline is used outside provider', () => {
-        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-        
-        expect(() => {
-            render(<TestComponent />);
-        }).toThrow('useOffline must be used within OfflineProvider');
+		expect(removeEventListenerSpy).toHaveBeenCalledWith(
+			"online",
+			expect.any(Function),
+		);
+		expect(removeEventListenerSpy).toHaveBeenCalledWith(
+			"offline",
+			expect.any(Function),
+		);
+	});
 
-        consoleError.mockRestore();
-    });
+	it("should throw error when useOffline is used outside provider", () => {
+		const consoleError = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
+
+		expect(() => {
+			render(<TestComponent />);
+		}).toThrow("useOffline must be used within OfflineProvider");
+
+		consoleError.mockRestore();
+	});
 });
