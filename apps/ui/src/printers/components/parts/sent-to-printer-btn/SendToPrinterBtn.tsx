@@ -1,4 +1,4 @@
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useSettings } from "@/core/settings/useSettings";
 import { IconPrinter } from "@tabler/icons-react";
 import { Printer } from "@/printers/entities/Printer";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ type SentToPrinterBtnProps = {
 }
 
 export function SendToPrinterBtn({ id }: SentToPrinterBtnProps) {
-    const { settings } = useContext(SettingsContext);
+    const { settings } = useSettings();
     const [printers, setPrinters] = useState<Printer[]>([])
     const [{ data, loading }] = useAxios<Printer[]>({ url: `${settings.localBackend}/printers` })
     const [{ loading: sLoading }, executeSendToPrinter] = useAxios({}, { manual: true })

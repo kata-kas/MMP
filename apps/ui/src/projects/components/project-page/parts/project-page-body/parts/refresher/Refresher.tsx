@@ -1,7 +1,7 @@
 import SSEContext from "@/core/sse/SSEContext";
 import { useId } from "react";
 import { toast } from "sonner";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { logger } from "@/lib/logger";
 
@@ -13,7 +13,11 @@ export function Refresher({ projectUUID }: RefresherProps) {
     const subscriberId = useId();
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
     const [assetUpdate, setAssetUpdate] = useState({} as Record<string, unknown>)
-    const [, setError] = useState<Error | null>(null);
+    
+    const handleError = useCallback((error: Error) => {
+        logger.error('SSE subscription error', error);
+    }, []);
+
     useEffect(() => {
         if (!connected) return;
         setAssetUpdate({})
@@ -25,11 +29,11 @@ export function Refresher({ projectUUID }: RefresherProps) {
             ...subscription,
             event: `system.state.asset.event`,
             callback: setAssetUpdate
-        }).catch(setError);
+        }).catch(handleError);
         return () => {
             unsubscribe(subscriberId)
         }
-    }, [connected, subscriberId, subscribe, unsubscribe])
+    }, [connected, subscriberId, subscribe, unsubscribe, handleError])
 
     useEffect(() => {
         if (!assetUpdate.state) return;

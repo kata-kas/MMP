@@ -15,10 +15,15 @@ import { logger } from "@/lib/logger";
 export function SettingsForm() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
     const { settings } = useContext(SettingsContext);
-    const [{ data, loading: cLoading }] = useAxios<AgentSettings>({ url: `${settings.localBackend}/system/settings?_=${reload.current}` })
+    const [{ data, loading: cLoading }] = useAxios<AgentSettings>(
+        settings.localBackend 
+            ? { url: `${settings.localBackend}/system/settings?_=${reload.current}` }
+            : null,
+        { skip: !settings.localBackend }
+    )
 
     const [{ loading: sLoading }, executeSave] = useAxios({
-        url: `${settings.localBackend}/system/settings`,
+        url: settings.localBackend ? `${settings.localBackend}/system/settings` : '',
         method: 'POST'
     }, { manual: true })
 

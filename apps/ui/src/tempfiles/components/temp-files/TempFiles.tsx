@@ -1,11 +1,11 @@
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useSettings } from "@/core/settings/useSettings";
 import { TempFile } from "@/tempfiles/entities/TempFile";
 import { IconTrash, IconFileArrowRight } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import useAxios from "axios-hooks";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ProjectSelect } from "./parts/project-select/ProjectSelect";
 import { Project } from "@/projects/entities/Project";
 import { Header } from "@/core/header/Header";
@@ -14,7 +14,7 @@ import { logger } from "@/lib/logger";
 
 export function TempFiles() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const { settings } = useContext(SettingsContext);
+    const { settings } = useSettings();
     const [tempFiles, setTempFiles] = useState<TempFile[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
     const [, callSendToProject] = useAxios({ method: 'post' }, { manual: true })

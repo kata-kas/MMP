@@ -2,7 +2,7 @@ import { Widget } from "@/dashboard/entities/WidgetType";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useContext, useEffect } from "react";
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useSettings } from "@/core/settings/useSettings";
 import { Job, Printer, Thermal } from "@/printers/entities/Printer";
 import useAxios from "axios-hooks";
 import { PrintProgressBar } from "../parts/print-progress-bar/PrintProgressBar";
@@ -14,9 +14,13 @@ import { useCumulativeEvent } from "@/core/sse/useCumulativeEvent";
 import { useId } from 'react';
 
 export function PrinterTableWidget(w: Widget) {
-    const { settings } = useContext(SettingsContext);
+    const { settings } = useSettings();
     const subscriberId = useId();
-    const [{ data: printer, loading }] = useAxios<Printer>({ url: `${settings.localBackend}/printers/${(w.config as { printer?: string }).printer}` })
+    const printerId = (w.config as { printer?: string }).printer;
+    const [{ data: printer, loading }] = useAxios<Printer>(
+        printerId ? { url: `${settings.localBackend}/printers/${printerId}` } : null,
+        { skip: !printerId }
+    )
     const { connected, subscribe, unsubscribe } = useContext(SSEContext)
     const [extruder, setExtruder] = useCumulativeEvent<Thermal>({ temperature: 0 });
     const [heaterBed, setHeaterBed] = useCumulativeEvent<Thermal>({ temperature: 0 });

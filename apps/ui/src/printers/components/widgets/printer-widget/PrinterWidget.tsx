@@ -2,7 +2,7 @@ import { Widget } from "@/dashboard/entities/WidgetType";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useContext } from "react";
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useSettings } from "@/core/settings/useSettings";
 import { Printer } from "@/printers/entities/Printer";
 import useAxios from "axios-hooks";
 import { ExtruderTemp } from "../parts/heater-temp/ExtruderTemp";
@@ -12,8 +12,12 @@ import { PrintProgressBar } from "../parts/print-progress-bar/PrintProgressBar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 export function PrinterWidget(w: Widget) {
-    const { settings } = useContext(SettingsContext);
-    const [{ data: printer, loading }] = useAxios<Printer>({ url: `${settings.localBackend}/printers/${(w.config as { printer?: string }).printer}` })
+    const { settings } = useSettings();
+    const printerId = (w.config as { printer?: string }).printer;
+    const [{ data: printer, loading }] = useAxios<Printer>(
+        printerId ? { url: `${settings.localBackend}/printers/${printerId}` } : null,
+        { skip: !printerId }
+    )
     const state = {};
     if (loading) return <>Loading...</>;
     return (

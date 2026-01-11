@@ -1,7 +1,7 @@
 import useAxios from "axios-hooks";
 import { AddPrinter } from "./parts/add-printer/AddPrinter";
 import { useContext, useEffect, useRef, useState } from "react";
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useSettings } from "@/core/settings/useSettings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { logger } from "@/lib/logger";
 
 export function PrintersPage() {
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const { settings } = useContext(SettingsContext);
+    const { settings } = useSettings();
     const [printers, setPrinters] = useState<Printer[]>([])
     const [{ data }] = useAxios<Printer[]>({ url: `${settings.localBackend}/printers?_=${reload.current}` })
     const [{ loading: dLoading }, executeDelete] = useAxios({ method: 'POST' }, { manual: true })

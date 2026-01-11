@@ -11,5 +11,6 @@ export interface ExperimentalFeatures {
 interface SettingsProviderType {
     settings: Settings,
     setExperimental: (mutator: (prev: ExperimentalFeatures) => ExperimentalFeatures) => void,
+    ready: boolean;
 }
 export const SettingsContext = React.createContext<SettingsProviderType>({} as SettingsProviderType);

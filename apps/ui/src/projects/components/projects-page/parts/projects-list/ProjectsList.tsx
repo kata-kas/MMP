@@ -7,13 +7,14 @@ import { useSearchParams } from "react-router-dom";
 import useAxios from "axios-hooks";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Project } from "@/projects/entities/Project.ts";
-import { SettingsContext } from "@/core/settings/settingsContext.ts";
+import { useSettings } from "@/core/settings/useSettings";
 import { ProjectFilter } from "./parts/project-filter/ProjectFilter.tsx";
+import { logger } from "@/lib/logger";
 
 export function ProjectsList() {
     const [searchParams, setSearchParams] = useSearchParams();
     const reload = useRef(Math.floor(1000 + Math.random() * 9000));
-    const { settings } = useContext(SettingsContext);
+    const { settings } = useSettings();
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState('20')
     const [projects, setProjects] = useState<Project[]>([])
@@ -26,8 +27,13 @@ export function ProjectsList() {
         setProjects(data.items)
     }, [data]);
     useEffect(() => {
-        if (!searchParams.get('filter')) return;
-        setFilter(JSON.parse(searchParams.get('filter') ?? ''))
+        const filterParam = searchParams.get('filter');
+        if (!filterParam) return;
+        try {
+            setFilter(JSON.parse(filterParam));
+        } catch (e) {
+            logger.error('Failed to parse filter from URL', e);
+        }
     }, [searchParams])
 
     if (error) return <p>Error!</p>;

@@ -18,5 +18,6 @@ module.exports = {
     "@typescript-eslint/no-unsafe-assignment": "error",
     "@typescript-eslint/no-unsafe-member-access": "error",
     "no-console": ["warn", { allow: ["warn", "error"] }],
+    "react-hooks/exhaustive-deps": "error",
   },
 };

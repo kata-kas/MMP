@@ -1,11 +1,11 @@
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useSettings } from "@/core/settings/useSettings";
 import { Tag } from "@/projects/entities/Project";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TagsInput } from "@/components/ui/tags-input";
 import { IconFilter, IconSearch, IconX } from "@tabler/icons-react";
 import useAxios from "axios-hooks";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type Filter = {
     name: string;
@@ -18,7 +18,7 @@ type ProjectFilterProps = {
 };
 
 export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
-    const { settings } = useContext(SettingsContext);
+    const { settings } = useSettings();
     const [filter, setFilter] = useState<Filter>(value)
     const [tags, setTags] = useState<string[]>([]);
     const [opened, setOpened] = useState(false);

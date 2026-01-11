@@ -1,4 +1,4 @@
-import { SettingsContext } from "@/core/settings/settingsContext";
+import { useSettings } from "@/core/settings/useSettings";
 import { Printer, printerTypes } from "@/printers/entities/Printer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { IconPlugConnected } from "@tabler/icons-react";
 import useAxios from "axios-hooks";
-import { useContext, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { logger } from "@/lib/logger";
 
@@ -17,7 +17,7 @@ type PrinterFormProps = {
 }
 
 export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
-    const { settings } = useContext(SettingsContext);
+    const { settings } = useSettings();
     const form = useForm({
         defaultValues: {
             name: '',
@@ -28,7 +28,13 @@ export function PrinterForm({ printer, onPrinterChange }: PrinterFormProps) {
     });
     
     const [{ loading }, executeSave] = useAxios({ method: 'POST' }, { manual: true })
-    const [{ loading: cLoading }, executTest] = useAxios({ method: 'POST', url: `${settings.localBackend}/printers/test` }, { manual: true })
+    const [{ loading: cLoading }, executTest] = useAxios(
+        { 
+            method: 'POST', 
+            url: `${settings.localBackend}/printers/test`
+        }, 
+        { manual: true }
+    )
     
     useEffect(() => {
         if (!printer) return;
