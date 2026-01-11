@@ -19,6 +19,16 @@ const preview: Preview = {
         { name: 'light', value: '#ffffff' },
       ],
     },
+    a11y: {
+      config: {
+        rules: [
+          {
+            id: 'color-contrast',
+            enabled: true,
+          },
+        ],
+      },
+    },
   },
   decorators: [
     (Story) => (

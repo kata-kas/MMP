@@ -1,0 +1,151 @@
+import { Meta, Story } from '@storybook/blocks';
+import * as CardStories from './card.stories';
+
+<Meta of={CardStories} />
+
+# Card
+
+A flexible container component for displaying content with optional header, footer, and structured sections.
+
+## Overview
+
+The Card component provides a consistent container for grouping related content. It consists of multiple subcomponents that can be combined as needed:
+
+- `Card` - Root container with border, shadow, and rounded corners
+- `CardHeader` - Header section with padding
+- `CardTitle` - Large title text
+- `CardDescription` - Muted description text
+- `CardContent` - Main content area
+- `CardFooter` - Footer section for actions
+
+## Props
+
+All Card subcomponents accept standard HTML div props plus:
+
+| Component | Props | Description |
+|-----------|-------|-------------|
+| `Card` | `className`, `children` | Root container |
+| `CardHeader` | `className`, `children` | Header wrapper with padding |
+| `CardTitle` | `className`, `children` | Large semibold title |
+| `CardDescription` | `className`, `children` | Muted description text |
+| `CardContent` | `className`, `children` | Main content with padding |
+| `CardFooter` | `className`, `children` | Footer with flex layout |
+
+## Usage Examples
+
+### Basic Card
+
+```tsx
+<Card>
+  <CardHeader>
+    <CardTitle>Card Title</CardTitle>
+    <CardDescription>Card description</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <p>Card content goes here.</p>
+  </CardContent>
+</Card>
+```
+
+### Card with Footer Actions
+
+```tsx
+<Card>
+  <CardHeader>
+    <CardTitle>Settings</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Configure your settings here.</p>
+  </CardContent>
+  <CardFooter className="flex justify-between">
+    <Button variant="outline">Cancel</Button>
+    <Button>Save</Button>
+  </CardFooter>
+</Card>
+```
+
+### Minimal Card
+
+```tsx
+<Card>
+  <CardContent className="p-6">
+    <p>Simple card with just content.</p>
+  </CardContent>
+</Card>
+```
+
+### Card Grid
+
+```tsx
+<div className="grid grid-cols-3 gap-4">
+  <Card>
+    <CardHeader>
+      <CardTitle>Card 1</CardTitle>
+    </CardHeader>
+    <CardContent>Content 1</CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle>Card 2</CardTitle>
+    </CardHeader>
+    <CardContent>Content 2</CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle>Card 3</CardTitle>
+    </CardHeader>
+    <CardContent>Content 3</CardContent>
+  </Card>
+</div>
+```
+
+## Design Guidelines
+
+### Spacing
+
+- `CardHeader`: `p-6` with `space-y-1.5` for title/description
+- `CardContent`: `p-6 pt-0` (no top padding, inherits from header)
+- `CardFooter`: `p-6 pt-0` with flex layout
+
+### Styling
+
+- Default width: Full width of container
+- Border: `rounded-lg border`
+- Shadow: `shadow-sm`
+- Background: Uses `bg-card` and `text-card-foreground` theme colors
+
+### Layout Patterns
+
+1. **Information Cards**: Header + Content
+2. **Action Cards**: Header + Content + Footer
+3. **Simple Cards**: Content only
+4. **Dashboard Cards**: Header + Content (no footer)
+
+### Best Practices
+
+1. **Consistent Structure**: Use the same subcomponent order across similar cards
+2. **Responsive Width**: Use `className="w-[350px]"` or responsive classes for fixed widths
+3. **Footer Actions**: Use flex utilities for button alignment
+4. **Content Density**: Avoid cramming too much content; use multiple cards if needed
+
+## Composition
+
+Typical card structure:
+
+```
+Card
+├── CardHeader (optional)
+│   ├── CardTitle (optional)
+│   └── CardDescription (optional)
+├── CardContent (required for content)
+└── CardFooter (optional)
+    └── [Action buttons]
+```
+
+<Story of={CardStories.Default} />
+
+<Story of={CardStories.WithAllSubcomponents} />
+
+<Story of={CardStories.WithoutFooter} />
+
+<Story of={CardStories.HeaderOnly} />

@@ -1,0 +1,178 @@
+import { Meta, Story } from '@storybook/blocks';
+import * as TableStories from './table.stories';
+
+<Meta of={TableStories} />
+
+# Table
+
+A semantic table component with structured subcomponents for building accessible data tables.
+
+## Overview
+
+The Table component provides a complete table structure with proper semantic HTML and styling:
+
+- `Table` - Root wrapper with overflow handling
+- `TableHeader` - `<thead>` section
+- `TableBody` - `<tbody>` section
+- `TableFooter` - `<tfoot>` section (optional)
+- `TableRow` - Table row with hover states
+- `TableHead` - Header cell (`<th>`)
+- `TableCell` - Data cell (`<td>`)
+- `TableCaption` - Table caption (optional)
+
+## Props
+
+All Table subcomponents accept standard HTML table element props plus:
+
+| Component | Props | Description |
+|-----------|-------|-------------|
+| `Table` | `className`, `children` | Root wrapper with overflow |
+| `TableHeader` | `className`, `children` | Header section |
+| `TableBody` | `className`, `children` | Body section |
+| `TableFooter` | `className`, `children` | Footer section |
+| `TableRow` | `className`, `children` | Row with hover state |
+| `TableHead` | `className`, `children` | Header cell |
+| `TableCell` | `className`, `children` | Data cell |
+| `TableCaption` | `className`, `children` | Caption text |
+
+## Usage Examples
+
+### Basic Table
+
+```tsx
+<Table>
+  <TableCaption>A list of items</TableCaption>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Status</TableHead>
+      <TableHead className="text-right">Amount</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell className="font-medium">Item 1</TableCell>
+      <TableCell>Active</TableCell>
+      <TableCell className="text-right">$100.00</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>
+```
+
+### Table with Footer
+
+```tsx
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Product</TableHead>
+      <TableHead className="text-right">Price</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Product A</TableCell>
+      <TableCell className="text-right">$29.99</TableCell>
+    </TableRow>
+    <TableRow>
+      <TableCell>Product B</TableCell>
+      <TableCell className="text-right">$39.99</TableCell>
+    </TableRow>
+  </TableBody>
+  <TableFooter>
+    <TableRow>
+      <TableCell>Total</TableCell>
+      <TableCell className="text-right">$69.98</TableCell>
+    </TableRow>
+  </TableFooter>
+</Table>
+```
+
+### Table with Actions
+
+```tsx
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Email</TableHead>
+      <TableHead className="text-right">Actions</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell className="font-medium">John Doe</TableCell>
+      <TableCell>john@example.com</TableCell>
+      <TableCell className="text-right">
+        <Button variant="ghost" size="sm">Edit</Button>
+      </TableCell>
+    </TableRow>
+  </TableBody>
+</Table>
+```
+
+### Responsive Table
+
+```tsx
+<div className="w-full overflow-auto">
+  <Table className="min-w-[600px]">
+    {/* table content */}
+  </Table>
+</div>
+```
+
+## Design Guidelines
+
+### Accessibility
+
+- Use `TableCaption` to describe table purpose
+- Use `TableHead` for all header cells (not `TableCell`)
+- Ensure proper table structure: Header → Body → Footer
+- Use semantic HTML; screen readers rely on proper structure
+
+### Styling
+
+- Default: Full width with `text-sm`
+- Header cells: `h-12 px-4` with `text-muted-foreground`
+- Body cells: `p-4` with hover state `hover:bg-muted/50`
+- Footer: `bg-muted/50` with `font-medium`
+- Row hover: Automatic `bg-muted/50` on hover
+
+### Alignment
+
+- Default: Left-aligned text
+- Numbers: Use `className="text-right"` for numeric columns
+- Actions: Right-align action columns
+- Checkboxes: Use `[&:has([role=checkbox])]:pr-0` for checkbox columns
+
+### Best Practices
+
+1. **Caption**: Always include a caption for context
+2. **Header**: Use `TableHead` for all column headers
+3. **Width**: Set explicit widths for columns when needed: `className="w-[100px]"`
+4. **Responsive**: Wrap in overflow container for mobile
+5. **Footer**: Use for totals, summaries, or aggregate data
+
+## Composition
+
+Standard table structure:
+
+```
+Table
+├── TableCaption (optional)
+├── TableHeader
+│   └── TableRow
+│       └── TableHead (one per column)
+├── TableBody
+│   └── TableRow (one per data row)
+│       └── TableCell (one per column)
+└── TableFooter (optional)
+    └── TableRow
+        └── TableCell
+```
+
+<Story of={TableStories.Default} />
+
+<Story of={TableStories.WithoutFooter} />
+
+<Story of={TableStories.WithActions} />
