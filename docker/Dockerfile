@@ -21,6 +21,7 @@ COPY apps/ui/index.html ./
 COPY apps/ui/vite.config.ts ./
 COPY apps/ui/tsconfig*.json ./
 COPY apps/ui/postcss.config.cjs ./
+COPY apps/ui/tailwind.config.js ./
 RUN npm run build
 
 # Stage 3: Runtime with Caddy
