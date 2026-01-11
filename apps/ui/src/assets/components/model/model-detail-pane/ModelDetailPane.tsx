@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+import { BufferGeometry, Mesh, Group, Box3, Vector3, Box3Helper, AxesHelper } from 'three'
 import { Canvas, useLoader, useThree } from '@react-three/fiber'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { Suspense, useContext, useLayoutEffect, useRef, useEffect, useState } from "react";
@@ -22,8 +22,8 @@ function Model({ color, model, projectUuid }: ModelProps) {
         : '/api';
     const modelUrl = `${baseUrl}/projects/${projectUuid}/assets/${model.id}/file`;
     
-    const geom = useLoader(STLLoader, modelUrl) as THREE.BufferGeometry;
-    const meshRef = useRef<THREE.Mesh>(null!)
+    const geom = useLoader(STLLoader, modelUrl) as BufferGeometry;
+    const meshRef = useRef<Mesh>(null!)
 
     const [active, setActive] = useState(false)
 
@@ -73,14 +73,14 @@ function Scene({ models, projectUuid }: SceneProps) {
 }
 
 function MoveCamera({ children, models }: { children: JSX.Element[], models: Asset[] }) {
-    const group = useRef<THREE.Group>(null)
+    const group = useRef<Group>(null)
     const { camera } = useThree()
     useLayoutEffect(() => {
         if (!group.current) return;
-        const box = new THREE.Box3();
+        const box = new Box3();
         box.setFromObject(group.current);
 
-        const size = new THREE.Vector3();
+        const size = new Vector3();
         box.getSize(size);
         const fov = camera.fov * (Math.PI / 180);
         const fovh = 2 * Math.atan(Math.tan(fov / 2) * camera.aspect);
@@ -99,12 +99,12 @@ function MoveCamera({ children, models }: { children: JSX.Element[], models: Ass
         const minZ = box.min.z;
         const cameraToFarEdge = (minZ < 0) ? -minZ + cameraZ : cameraZ - minZ;
 
-        const box3Helper = new THREE.Box3Helper(box, 0x00ff00);
+        const box3Helper = new Box3Helper(box, 0x00ff00);
         box3Helper.material.linewidth = 3;
         group.current.add(box3Helper);
 
-        const axesHelper = new THREE.AxesHelper(5);
-        const center = new THREE.Vector3();
+        const axesHelper = new AxesHelper(5);
+        const center = new Vector3();
         box.getCenter(center)
         axesHelper.position.set(center.x, center.y, center.z)
         group.current.add(axesHelper);

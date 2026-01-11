@@ -55,3 +55,6 @@ docker/library/
 # OS
 .DS_Store
 Thumbs.db
+
+# Visualizer
+dist/stats.html

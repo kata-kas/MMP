@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Asset, AssetType } from "@/assets/entities/Assets.ts";
-import { useEffect, useState, useMemo } from "react";
-import { ModelDetailPane } from "@/assets/components/model/model-detail-pane/ModelDetailPane.tsx";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+
+const ModelDetailPane = lazy(() => import("@/assets/components/model/model-detail-pane/ModelDetailPane.tsx").then(m => ({ default: m.ModelDetailPane })));
 import { IconSettings, IconFiles } from "@tabler/icons-react";
 import { X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -137,11 +138,13 @@ export function ProjectPageBody({ projectUuid, project, onProjectChange }: Proje
                             ))}
                     </div>
                     {selectedModels.length > 0 && (
-                        <ModelDetailPane 
-                            projectUuid={projectUuid} 
-                            onClose={() => setSelectedModels([])}
-                            models={selectedModels} 
-                        />
+                        <Suspense fallback={<Skeleton className="h-[450px] w-full" />}>
+                            <ModelDetailPane 
+                                projectUuid={projectUuid} 
+                                onClose={() => setSelectedModels([])}
+                                models={selectedModels} 
+                            />
+                        </Suspense>
                     )}
                     {project && selectedAsset && (
                         <Alert>
