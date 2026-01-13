@@ -52,10 +52,6 @@ func InitDatabase(logger *zap.Logger) error {
 		return fmt.Errorf("failed to initialize tags: %w", err)
 	}
 
-	if err = initProjects(); err != nil {
-		return fmt.Errorf("failed to initialize projects: %w", err)
-	}
-
 	if err = initAssets(); err != nil {
 		return fmt.Errorf("failed to initialize assets: %w", err)
 	}

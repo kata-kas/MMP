@@ -5,7 +5,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 )
@@ -13,11 +12,6 @@ import (
 type Extracted struct {
 	Label string
 	File  string
-}
-
-type Enrichable interface {
-	GetAsset() *entities.ProjectAsset
-	GetProject() *entities.Project
 }
 
 type Renderer interface {

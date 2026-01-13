@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { menuItems as dashboardMenuItems } from "@/dashboard/menu";
 import { menuItems as printersMenuItems } from "@/printers/menu";
+import { menuItems as assetMenuItems } from "@/assets/menu";
 import { menuItems as projectMenuItems } from "@/projects/menu";
 import { menuItems as settingsMenuItems } from "@/settings/menu";
 import { menuItems as tempFileMenuItems } from "@/tempfiles/menu";
@@ -23,7 +24,7 @@ import { SettingsContext } from "../core/settings/settingsContext";
 import { StatusIcon } from "../core/sse/components/status-icon/StatusIcon";
 
 const stdMenuItems = [
-	...projectMenuItems,
+	...assetMenuItems,
 	...tempFileMenuItems,
 	...printersMenuItems,
 ];

@@ -11,6 +11,7 @@ import { Z_INDEX } from "./core/z-index";
 
 import { routes as dashboardRoutes } from "./dashboard/routes.tsx";
 import { routes as printersRoutes } from "./printers/routes.tsx";
+import { routes as assetRoutes } from "./assets/routes.tsx";
 import { routes as projectRoutes } from "./projects/routes.tsx";
 import { routes as settingsRoutes } from "./settings/routes.tsx";
 import { routes as tempFilesRoutes } from "./tempfiles/routes.tsx";
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
 			{
 				path: "",
 				children: dashboardRoutes,
+			},
+			{
+				path: "assets",
+				children: assetRoutes,
 			},
 			{
 				path: "projects",

@@ -18,7 +18,7 @@ func ConnectionStatus(printer *models.Printer) error {
 	return nil
 }
 
-func UploadFile(printer *models.Printer, asset *models.ProjectAsset) error {
+func UploadFile(printer *models.Printer, asset *models.Asset) error {
 	op := &OctoPrintPrinter{printer}
 
 	return op.ServerFilesUpload(asset)

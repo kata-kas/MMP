@@ -65,7 +65,7 @@ func sendHandler(c echo.Context) error {
 	}
 
 	id := c.Param("id")
-	asset, err := database.GetAsset(id)
+	asset, err := database.GetAsset(id, false)
 
 	if err != nil {
 		logger.GetLogger().Error("failed to get asset", zap.String("id", id), zap.Error(err))
@@ -73,11 +73,11 @@ func sendHandler(c echo.Context) error {
 	}
 
 	if printer.Type == "klipper" {
-		err = klipper.UploadFile(printer, asset)
+		err = klipper.UploadFile(printer, &asset)
 	}
 
 	if printer.Type == "octoPrint" {
-		err = octorpint.UploadFile(printer, asset)
+		err = octorpint.UploadFile(printer, &asset)
 	}
 
 	if err != nil {

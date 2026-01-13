@@ -11,19 +11,24 @@ import (
 
 	"github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/logger"
-	"github.com/eduardooliveira/stLib/core/processing/initialization"
-	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/utils"
 )
 
-func DownloadAsset(name string, project *entities.Project, client *http.Client, req *http.Request) ([]*types.ProcessableAsset, error) {
-	out, err := os.Create(utils.ToLibPath(filepath.Join(project.FullPath(), name)))
+func DownloadAsset(name string, parentAsset *entities.Asset, client *http.Client, req *http.Request) (*entities.Asset, error) {
+	var filePath string
+	if parentAsset.Path != nil {
+		filePath = filepath.Join(parentAsset.Root, *parentAsset.Path, name)
+	} else {
+		filePath = filepath.Join(parentAsset.Root, name)
+	}
+
+	out, err := os.Create(utils.ToLibPath(filePath))
 	if err != nil {
 		return nil, err
 	}
 	defer out.Close()
 
-	logger.GetLogger().Info("downloading asset", zap.String("name", name), zap.String("project_uuid", project.UUID))
+	logger.GetLogger().Info("downloading asset", zap.String("name", name), zap.String("parent_asset_id", parentAsset.ID))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -39,11 +44,17 @@ func DownloadAsset(name string, project *entities.Project, client *http.Client, 
 	if err != nil {
 		return nil, err
 	}
-	return initialization.NewAssetIniter(&types.ProcessableAsset{
-		Name:    name,
-		Project: project,
-		Origin:  "fs",
-	}).Init()
+
+	// Create asset entity
+	var assetPath string
+	if parentAsset.Path != nil {
+		assetPath = filepath.Join(*parentAsset.Path, name)
+	} else {
+		assetPath = name
+	}
+
+	newAsset := entities.NewAsset("default", parentAsset.Root, assetPath, false, parentAsset)
+	return newAsset, nil
 }
 
 func SaveFile(dst string, f io.Reader) error {

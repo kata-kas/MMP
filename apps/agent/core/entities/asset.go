@@ -1,100 +1,112 @@
 package entities
 
 import (
-	"crypto/sha1"
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"mime"
-	"os"
-	"path"
+	"crypto/md5"
+	"encoding/hex"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"gorm.io/gorm"
 
-	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 )
 
-type AssetProperties map[string]any
+type NodeKind string
 
-func (n *AssetProperties) Scan(src interface{}) error {
-	str, ok := src.(string)
-	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal JSON string:", src))
+const (
+	NodeKindRoot    NodeKind = "root"
+	NodeKindFile    NodeKind = "file"
+	NodeKindDir     NodeKind = "dir"
+	NodeKindBundle  NodeKind = "bundle"
+	NodeKindBundled NodeKind = "bundled"
+)
+
+type Asset struct {
+	ID           string     `json:"id" gorm:"primaryKey"`
+	Label        *string    `json:"label"`
+	Description  *string    `json:"description,omitempty"`
+	Path         *string    `json:"path,omitempty"`
+	Root         string     `json:"root"`
+	FSKind       string     `json:"fs_kind"` // "local" for now
+	FSName       string     `json:"fs_name"` // filesystem name
+	Extension    *string    `json:"extension,omitempty"`
+	Kind         *string    `json:"kind,omitempty"` // asset type: "model", "image", "dir", etc.
+	NodeKind     NodeKind   `json:"node_kind"`
+	ParentID     *string    `json:"parent_id,omitempty"`
+	Parent       *Asset     `json:"-" gorm:"foreignKey:ParentID"`
+	NestedAssets []*Asset   `json:"nested_assets,omitempty" gorm:"foreignKey:ParentID;constraint:OnDelete:CASCADE;"`
+	Thumbnail    *string    `json:"thumbnail,omitempty"`
+	SeenOnScan   *bool      `json:"seen_on_scan,omitempty"`
+	Properties   Properties `json:"properties,omitempty" gorm:"type:json"`
+	Tags         []*Tag     `json:"tags,omitempty" gorm:"many2many:asset_tags"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+func NewAsset(fsName, root, path string, isDir bool, parent *Asset) *Asset {
+	ext := filepath.Ext(path)
+
+	data := []byte(filepath.Join(fsName, root, path))
+	md5Hash := md5.Sum(data)
+	id := hex.EncodeToString(md5Hash[:])
+
+	asset := &Asset{
+		ID:         id,
+		Path:       utils.Ptr(path),
+		Root:       root,
+		FSName:     fsName,
+		FSKind:     "local",
+		Label:      utils.Ptr(strings.TrimSuffix(filepath.Base(path), ext)),
+		Extension:  utils.Ptr(ext),
+		Properties: make(Properties),
 	}
-	a := json.Unmarshal([]byte(str), &n)
-	return a
-}
 
-func (n AssetProperties) Value() (driver.Value, error) {
-	val, err := json.Marshal(n)
-	return string(val), err
-}
-
-type ProjectAsset struct {
-	ID          string          `json:"id" toml:"id" form:"id" query:"id" gorm:"primaryKey"`
-	Name        string          `json:"name" toml:"name" form:"name" query:"name"`
-	Label       string          `json:"label" toml:"label" form:"label" query:"label"`
-	Origin      string          `json:"origin" toml:"origin" form:"origin" query:"origin"`
-	ProjectUUID string          `json:"project_uuid" toml:"project_uuid" form:"project_uuid" query:"project_uuid"`
-	project     *Project        `json:"-" toml:"-" form:"-" query:"-" gorm:"foreignKey:ProjectUUID"`
-	Size        int64           `json:"size" toml:"size" form:"size" query:"size"`
-	ModTime     time.Time       `json:"mod_time" toml:"mod_time" form:"mod_time" query:"mod_time"`
-	AssetType   string          `json:"asset_type" toml:"asset_type" form:"asset_type" query:"asset_type"`
-	Extension   string          `json:"extension" toml:"extension" form:"extension" query:"extension"`
-	MimeType    string          `json:"mime_type" toml:"mime_type" form:"mime_type" query:"mime_type"`
-	ImageID     string          `json:"image_id" toml:"image_id" form:"image_id" query:"image_id"`
-	Properties  AssetProperties `json:"properties" toml:"properties" form:"properties" query:"properties"`
-}
-
-func NewProjectAsset2(fileName string, label string, project *Project, origin string) (*ProjectAsset, error) {
-	var asset = &ProjectAsset{
-		Name:        fileName,
-		Label:       label,
-		Origin:      origin,
-		ProjectUUID: project.UUID,
-		project:     project,
-		Properties:  make(map[string]any),
+	if parent != nil {
+		asset.Parent = parent
+		asset.ParentID = &parent.ID
 	}
 
-	var fullFilePath string
-	if origin == "fs" {
-		fullFilePath = utils.ToLibPath(path.Join(project.FullPath(), fileName))
+	if isDir {
+		if parent == nil {
+			asset.NodeKind = NodeKindRoot
+			if fsName != "" {
+				asset.Label = utils.Ptr(fsName)
+			}
+		} else {
+			asset.NodeKind = NodeKindDir
+		}
+		asset.Kind = utils.Ptr("dir")
 	} else {
-		fullFilePath = utils.ToAssetsPath(project.UUID, fileName)
+		asset.NodeKind = NodeKindFile
 	}
 
-	var err error
-	file, err := os.Open(fullFilePath)
-	if err != nil {
-		logger.GetLogger().Error("failed to open file", zap.String("file_path", fullFilePath), zap.Error(err))
-		return nil, err
-	}
-	defer file.Close()
-	stat, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-	asset.Size = stat.Size()
-	asset.ModTime = stat.ModTime()
-
-	asset.Extension = strings.ToLower(filepath.Ext(fileName))
-	asset.MimeType = mime.TypeByExtension(asset.Extension)
-	asset.ID, err = assetSha(project.UUID, fileName, fullFilePath)
-	if err != nil {
-		return nil, err
-	}
-	return asset, err
+	return asset
 }
 
-func assetSha(projectUuid string, assetName string, fullFilePath string) (string, error) {
-	fSha512, err := utils.GetFileSha512(fullFilePath)
-	if err != nil {
-		return "", err
+func (a *Asset) bubbleThumbnail(tx *gorm.DB) error {
+	if a.Thumbnail == nil || a.ParentID == nil {
+		return nil
 	}
-	return fmt.Sprintf("%x", sha1.Sum([]byte(fmt.Sprintf("%s%s%s", projectUuid, assetName, fSha512)))), nil
+
+	var parent Asset
+	if err := tx.Model(&Asset{}).Where("ID = ?", *a.ParentID).First(&parent).Error; err != nil {
+		return err
+	}
+
+	if parent.Thumbnail == nil {
+		parent.Thumbnail = a.Thumbnail
+		if err := tx.Save(&parent).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *Asset) AfterSave(tx *gorm.DB) error {
+	if a.ID == "" {
+		return nil
+	}
+	return a.bubbleThumbnail(tx)
 }

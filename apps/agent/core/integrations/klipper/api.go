@@ -9,12 +9,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 
-	"go.uber.org/zap"
-
-	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
-	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/utils"
 )
 
@@ -35,24 +32,30 @@ func (p *KlipperPrinter) serverInfo() (*Result, error) {
 	return r.Result, nil
 }
 
-func (p *KlipperPrinter) ServerFilesUpload(asset *entities.ProjectAsset) error {
-
-	project, err := database.GetProject(asset.ProjectUUID)
-
-	if err != nil {
-		logger.GetLogger().Error("failed to get project", zap.String("project_uuid", asset.ProjectUUID), zap.Error(err))
-		return err
+func (p *KlipperPrinter) ServerFilesUpload(asset *entities.Asset) error {
+	if asset.Path == nil {
+		return fmt.Errorf("asset has no path")
 	}
 
-	file, err := os.Open(utils.ToLibPath(fmt.Sprintf("%s/%s", project.FullPath(), asset.Name)))
+	filePath := utils.ToLibPath(filepath.Join(asset.Root, *asset.Path))
+	file, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
+	fileName := filepath.Base(*asset.Path)
+	if asset.Label != nil {
+		if asset.Extension != nil {
+			fileName = *asset.Label + *asset.Extension
+		} else {
+			fileName = *asset.Label
+		}
+	}
+
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", asset.Name)
+	part, err := writer.CreateFormFile("file", fileName)
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ func (FlatAssetDiscoverer) Discover(root string) ([]*types.ProcessableAsset, err
 			continue
 		}
 
-		if shouldSkipFile(e.Name()) {
+		if ShouldSkipFile(e.Name()) {
 			continue
 		}
 		dAssets = append(dAssets, &types.ProcessableAsset{

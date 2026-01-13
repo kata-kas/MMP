@@ -1,8 +1,8 @@
 package entities
 
 type Tag struct {
-	Value    string     `json:"value" gorm:"primaryKey"`
-	Projects []*Project `gorm:"many2many:project_tags" json:"-"`
+	Value  string   `json:"value" gorm:"primaryKey"`
+	Assets []*Asset `gorm:"many2many:asset_tags" json:"-"`
 }
 
 func StringToTag(s string) *Tag {

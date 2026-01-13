@@ -21,7 +21,7 @@ import (
 	"github.com/eduardooliveira/stLib/core/downloader/tools"
 	"github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/logger"
-	"github.com/eduardooliveira/stLib/core/processing/types"
+	"github.com/eduardooliveira/stLib/core/runtime"
 	"github.com/eduardooliveira/stLib/core/utils"
 	"golang.org/x/net/html"
 )
@@ -29,7 +29,7 @@ import (
 type mwClient struct {
 	client    *http.Client
 	userAgent string
-	project   *entities.Project
+	rootAsset *entities.Asset
 	metadata  *makerWorldMetaData
 }
 
@@ -52,12 +52,15 @@ func Fetch(urlString string, cookies []*http.Cookie, userAgent string) error {
 	}
 	httpClient.Jar.SetCookies(u, cookies)
 
-	project := entities.NewProject("CHANGE ME")
+	// Create root asset
+	projectName := "CHANGE ME"
+	projectPath := filepath.Join("/", projectName)
+	rootAsset := entities.NewAsset("default", runtime.Cfg.Library.Path, projectPath, true, nil)
 
 	mwc := &mwClient{
 		client:    httpClient,
 		userAgent: userAgent,
-		project:   project,
+		rootAsset: rootAsset,
 	}
 
 	metadata, err := mwc.fetchDetails(u)
@@ -66,75 +69,102 @@ func Fetch(urlString string, cookies []*http.Cookie, userAgent string) error {
 	}
 	mwc.metadata = metadata
 
-	if err = utils.CreateFolder(utils.ToLibPath(project.FullPath())); err != nil {
-		logger.GetLogger().Error("error creating project folder", zap.String("path", project.FullPath()), zap.Error(err))
+	// Update root asset with metadata
+	if mwc.metadata.Props.PageProps.Design.Title != "" {
+		projectName = mwc.metadata.Props.PageProps.Design.Title
+		projectPath = filepath.Join("/", projectName)
+		rootAsset.Label = &projectName
+		rootAsset.Path = &projectPath
+	}
+	if mwc.metadata.Props.PageProps.Design.Summary != "" {
+		rootAsset.Description = &mwc.metadata.Props.PageProps.Design.Summary
+	}
+	if rootAsset.Properties == nil {
+		rootAsset.Properties = make(entities.Properties)
+	}
+	rootAsset.Properties["external_link"] = urlString
+
+	// Create folder
+	if err = utils.CreateFolder(utils.ToLibPath(filepath.Join(runtime.Cfg.Library.Path, *rootAsset.Path))); err != nil {
+		logger.GetLogger().Error("error creating asset folder", zap.String("path", *rootAsset.Path), zap.Error(err))
 		return err
 	}
 
-	if err = utils.CreateAssetsFolder(project.UUID); err != nil {
-		logger.GetLogger().Error("error creating assets folder", zap.String("project_uuid", project.UUID), zap.Error(err))
-		return err
+	// Save root asset
+	if err := database.InsertAsset(rootAsset); err != nil {
+		logger.GetLogger().Warn("failed to insert root asset, may already exist", zap.Error(err))
 	}
 
-	assets := make([]*types.ProcessableAsset, 0)
-	as, err := mwc.fetchCover()
+	var downloadedAssets []*entities.Asset
+
+	coverAsset, err := mwc.fetchCover()
 	if err != nil {
 		logger.GetLogger().Error("error fetching cover", zap.Error(err))
 		return err
 	}
-
-	for _, a := range as {
-		if a.Asset != nil {
-			project.DefaultImageID = a.Asset.ID
+	if coverAsset != nil {
+		downloadedAssets = append(downloadedAssets, coverAsset)
+		if rootAsset.Thumbnail == nil {
+			rootAsset.Thumbnail = &coverAsset.ID
 		}
 	}
 
-	assets = append(assets, as...)
-
-	as, err = mwc.fetchModels()
+	models, err := mwc.fetchModels()
 	if err != nil {
 		logger.GetLogger().Error("error fetching models", zap.Error(err))
 		return err
 	}
-	assets = append(assets, as...)
+	downloadedAssets = append(downloadedAssets, models...)
 
-	_, err = mwc.fetchInstances()
+	instances, err := mwc.fetchInstances()
 	if err != nil {
 		logger.GetLogger().Error("error fetching instances", zap.Error(err))
 		return err
 	}
+	downloadedAssets = append(downloadedAssets, instances...)
 
-	as, err = mwc.fetchPictures()
+	pictures, err := mwc.fetchPictures()
 	if err != nil {
 		logger.GetLogger().Error("error fetching pictures", zap.Error(err))
 		return err
 	}
-	assets = append(assets, as...)
+	downloadedAssets = append(downloadedAssets, pictures...)
 
-	if project.DefaultImageID == "" {
-		for _, a := range assets {
-			if a.Asset != nil && a.Asset.AssetType == "image" {
-				project.DefaultImageID = a.Asset.ID
+	// Set thumbnail from first image if not set
+	if rootAsset.Thumbnail == nil {
+		for _, asset := range downloadedAssets {
+			if asset.Kind != nil && *asset.Kind == "image" {
+				rootAsset.Thumbnail = &asset.ID
+				if err := database.SaveAsset(rootAsset); err != nil {
+					logger.GetLogger().Warn("failed to update root asset thumbnail", zap.Error(err))
+				}
 				break
 			}
 		}
 	}
 
-	return database.InsertProject(project)
+	return nil
 }
 
-func (mwc *mwClient) fetchCover() ([]*types.ProcessableAsset, error) {
+func (mwc *mwClient) fetchCover() (*entities.Asset, error) {
 	req, err := http.NewRequest("GET", mwc.metadata.Props.PageProps.Design.CoverURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("User-Agent", mwc.userAgent)
 
-	return tools.DownloadAsset(path.Base(mwc.metadata.Props.PageProps.Design.CoverURL), mwc.project, mwc.client, req)
+	asset, err := tools.DownloadAsset(path.Base(mwc.metadata.Props.PageProps.Design.CoverURL), mwc.rootAsset, mwc.client, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := database.InsertAsset(asset); err != nil {
+		logger.GetLogger().Warn("failed to insert cover asset", zap.Error(err))
+	}
+	return asset, nil
 }
 
-func (mwc *mwClient) fetchPictures() ([]*types.ProcessableAsset, error) {
-	assets := make([]*types.ProcessableAsset, 0)
+func (mwc *mwClient) fetchPictures() ([]*entities.Asset, error) {
+	var assets []*entities.Asset
 	for _, p := range mwc.metadata.Props.PageProps.Design.DesignExtension.DesignPictures {
 		req, err := http.NewRequest("GET", p.URL, nil)
 		if err != nil {
@@ -142,19 +172,23 @@ func (mwc *mwClient) fetchPictures() ([]*types.ProcessableAsset, error) {
 		}
 		req.Header.Add("User-Agent", mwc.userAgent)
 
-		a, err := tools.DownloadAsset(p.Name, mwc.project, mwc.client, req)
+		asset, err := tools.DownloadAsset(p.Name, mwc.rootAsset, mwc.client, req)
 		if err != nil {
 			logger.GetLogger().Warn("error fetching image, skipping", zap.String("name", p.Name), zap.Error(err))
 			continue
 		}
-		assets = append(assets, a...)
+		if err := database.InsertAsset(asset); err != nil {
+			logger.GetLogger().Warn("failed to insert picture asset", zap.String("name", p.Name), zap.Error(err))
+		} else {
+			assets = append(assets, asset)
+		}
 	}
 
 	return assets, nil
 }
 
-func (mwc *mwClient) fetchModels() ([]*types.ProcessableAsset, error) {
-	assets := make([]*types.ProcessableAsset, 0)
+func (mwc *mwClient) fetchModels() ([]*entities.Asset, error) {
+	var assets []*entities.Asset
 	for _, m := range mwc.metadata.Props.PageProps.Design.DesignExtension.ModelFiles {
 		req, err := http.NewRequest("GET", m.ModelURL, nil)
 		if err != nil {
@@ -162,19 +196,23 @@ func (mwc *mwClient) fetchModels() ([]*types.ProcessableAsset, error) {
 		}
 		req.Header.Add("User-Agent", mwc.userAgent)
 
-		a, err := tools.DownloadAsset(m.ModelName, mwc.project, mwc.client, req)
+		asset, err := tools.DownloadAsset(m.ModelName, mwc.rootAsset, mwc.client, req)
 		if err != nil {
 			logger.GetLogger().Warn("error fetching model, skipping", zap.String("name", m.ModelName), zap.Error(err))
 			continue
 		}
-		assets = append(assets, a...)
+		if err := database.InsertAsset(asset); err != nil {
+			logger.GetLogger().Warn("failed to insert model asset", zap.String("name", m.ModelName), zap.Error(err))
+		} else {
+			assets = append(assets, asset)
+		}
 	}
 
 	return assets, nil
 }
 
-func (mwc *mwClient) fetchInstances() ([]*types.ProcessableAsset, error) {
-	assets := make([]*types.ProcessableAsset, 0)
+func (mwc *mwClient) fetchInstances() ([]*entities.Asset, error) {
+	var assets []*entities.Asset
 
 	for _, m := range mwc.metadata.Props.PageProps.Design.Instances {
 		sl := rand.Intn(6000-3000) + 3000
@@ -199,12 +237,16 @@ func (mwc *mwClient) fetchInstances() ([]*types.ProcessableAsset, error) {
 		logger.GetLogger().Debug("sleeping before 3MF file download", zap.Int("ms", sl), zap.Int("instance_id", m.ID))
 		time.Sleep(time.Duration(sl) * time.Millisecond)
 
-		a, err := tools.DownloadAsset(name, mwc.project, mwc.client, req)
+		asset, err := tools.DownloadAsset(name, mwc.rootAsset, mwc.client, req)
 		if err != nil {
 			logger.GetLogger().Warn("failed to download 3MF file, skipping", zap.String("name", name), zap.Int("instance_id", m.ID), zap.Error(err))
 			continue
 		}
-		assets = append(assets, a...)
+		if err := database.InsertAsset(asset); err != nil {
+			logger.GetLogger().Warn("failed to insert instance asset", zap.String("name", name), zap.Error(err))
+		} else {
+			assets = append(assets, asset)
+		}
 	}
 
 	return assets, nil
@@ -257,13 +299,20 @@ func (mwc *mwClient) fetchDetails(url *url.URL) (*makerWorldMetaData, error) {
 		return nil, err
 	}
 
-	mwc.project.Name = metadata.Props.PageProps.Design.Title
-	mwc.project.Description = metadata.Props.PageProps.Design.Summary
-	mwc.project.Tags = entities.StringsToTags(metadata.Props.PageProps.Design.Tags)
-	for _, c := range metadata.Props.PageProps.Design.Categories {
-		mwc.project.Tags = append(mwc.project.Tags, entities.StringToTag(c.Name))
+	if metadata.Props.PageProps.Design.Title != "" {
+		mwc.rootAsset.Label = &metadata.Props.PageProps.Design.Title
 	}
-	mwc.project.ExternalLink = url.String()
+	if metadata.Props.PageProps.Design.Summary != "" {
+		mwc.rootAsset.Description = &metadata.Props.PageProps.Design.Summary
+	}
+	mwc.rootAsset.Tags = entities.StringsToTags(metadata.Props.PageProps.Design.Tags)
+	for _, c := range metadata.Props.PageProps.Design.Categories {
+		mwc.rootAsset.Tags = append(mwc.rootAsset.Tags, entities.StringToTag(c.Name))
+	}
+	if mwc.rootAsset.Properties == nil {
+		mwc.rootAsset.Properties = make(entities.Properties)
+	}
+	mwc.rootAsset.Properties["external_link"] = url.String()
 
 	return metadata, nil
 }

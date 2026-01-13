@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -17,14 +18,12 @@ import (
 	"github.com/eduardooliveira/stLib/core/downloader/tools"
 	"github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/logger"
-	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/runtime"
 	"github.com/eduardooliveira/stLib/core/utils"
 	"golang.org/x/sync/errgroup"
 )
 
 func Fetch(url string) error {
-
 	if runtime.Cfg.Integrations.Thingiverse.Token == "" {
 		return errors.New("missing Thingiverse api token")
 	}
@@ -41,57 +40,75 @@ func Fetch(url string) error {
 
 	httpClient := &http.Client{}
 
-	project := entities.NewProject("CHANGE ME")
+	// Create root asset for the downloaded project
+	projectName := "CHANGE ME"
+	projectPath := filepath.Join("/", projectName)
+	rootAsset := entities.NewAsset("default", runtime.Cfg.Library.Path, projectPath, true, nil)
 
-	err := fetchDetails(id, project, httpClient)
+	err := fetchDetails(id, rootAsset, httpClient)
 	if err != nil {
 		return err
 	}
 
-	if p, err := database.GetProjectByPathAndName(project.Path, project.Name); err == nil && p.UUID != "" {
-		project.UUID = p.UUID
+	// Check if asset already exists
+	existing, err := database.GetAsset(rootAsset.ID, false)
+	if err == nil && existing.ID != "" {
+		rootAsset = &existing
 	}
 
-	if err = utils.CreateFolder(utils.ToLibPath(project.FullPath())); err != nil {
-		logger.GetLogger().Error("error creating project folder", zap.String("path", project.FullPath()), zap.Error(err))
+	// Create folder
+	if err = utils.CreateFolder(utils.ToLibPath(filepath.Join(runtime.Cfg.Library.Path, *rootAsset.Path))); err != nil {
+		logger.GetLogger().Error("error creating asset folder", zap.String("path", *rootAsset.Path), zap.Error(err))
 		return err
 	}
 
-	if err = utils.CreateAssetsFolder(project.UUID); err != nil {
-		logger.GetLogger().Error("error creating assets folder", zap.String("project_uuid", project.UUID), zap.Error(err))
-		return err
+	// Save root asset
+	if err := database.InsertAsset(rootAsset); err != nil {
+		logger.GetLogger().Warn("failed to insert root asset, may already exist", zap.Error(err))
 	}
+
 	eg := errgroup.Group{}
-	fChan, runner := utils.Jobber(func() ([]*types.ProcessableAsset, error) {
-		return fetchFiles(id, project, httpClient)
-	})
-	eg.Go(runner)
+	var downloadedAssets []*entities.Asset
 
-	iChan, runner := utils.Jobber(func() ([]*types.ProcessableAsset, error) {
-		return fetchImages(id, project, httpClient)
-	})
-	eg.Go(runner)
-
-	for pas := range utils.MergeWait(fChan, iChan) {
-		for _, pa := range pas {
-			if pa.Asset.AssetType == "image" {
-				if project.DefaultImageID == "" || pa.Origin == "fs" {
-					project.DefaultImageID = pa.Asset.ID
-				}
-			}
+	eg.Go(func() error {
+		assets, err := fetchFiles(id, rootAsset, httpClient)
+		if err != nil {
+			return err
 		}
-	}
+		downloadedAssets = append(downloadedAssets, assets...)
+		return nil
+	})
+
+	eg.Go(func() error {
+		assets, err := fetchImages(id, rootAsset, httpClient)
+		if err != nil {
+			return err
+		}
+		downloadedAssets = append(downloadedAssets, assets...)
+		return nil
+	})
 
 	if err := eg.Wait(); err != nil {
 		return err
 	}
 
-	project.Initialized = true
+	// Set thumbnail from first image
+	for _, asset := range downloadedAssets {
+		if asset.Kind != nil && *asset.Kind == "image" {
+			if rootAsset.Thumbnail == nil {
+				rootAsset.Thumbnail = &asset.ID
+				if err := database.SaveAsset(rootAsset); err != nil {
+					logger.GetLogger().Warn("failed to update root asset thumbnail", zap.Error(err))
+				}
+			}
+			break
+		}
+	}
 
-	return database.UpdateProject(project)
+	return nil
 }
 
-func fetchDetails(id string, project *entities.Project, httpClient *http.Client) error {
+func fetchDetails(id string, rootAsset *entities.Asset, httpClient *http.Client) error {
 	u := &url.URL{Scheme: "https", Host: "api.thingiverse.com", Path: "/things/" + id}
 
 	req := &http.Request{
@@ -112,20 +129,33 @@ func fetchDetails(id string, project *entities.Project, httpClient *http.Client)
 		return err
 	}
 
-	project.Name = strings.ReplaceAll(fmt.Sprintf("%d - %s", thing.ID, thing.Name), "/", "-")
-	project.Description = thing.Description
-	project.ExternalLink = thing.PublicURL
+	projectName := strings.ReplaceAll(fmt.Sprintf("%d - %s", thing.ID, thing.Name), "/", "-")
+	rootAsset.Label = &projectName
+	desc := thing.Description
+	rootAsset.Description = &desc
 
-	for _, tag := range thing.Tags {
-		project.Tags = append(project.Tags, entities.StringToTag(tag.Name))
+	if rootAsset.Properties == nil {
+		rootAsset.Properties = make(entities.Properties)
 	}
+	rootAsset.Properties["external_link"] = thing.PublicURL
+
+	// Add tags
+	var tags []*entities.Tag
+	for _, tag := range thing.Tags {
+		tags = append(tags, entities.StringToTag(tag.Name))
+	}
+	rootAsset.Tags = tags
+
+	// Update path with actual name
+	projectPath := filepath.Join("/", projectName)
+	rootAsset.Path = &projectPath
 
 	logger.GetLogger().Info("downloading thingiverse details", zap.String("thing_name", thing.Name), zap.String("thing_id", id))
 
 	return nil
 }
 
-func fetchFiles(id string, project *entities.Project, httpClient *http.Client) ([]*types.ProcessableAsset, error) {
+func fetchFiles(id string, parentAsset *entities.Asset, httpClient *http.Client) ([]*entities.Asset, error) {
 	req := &http.Request{
 		Method: "GET",
 		URL:    &url.URL{Scheme: "https", Host: "api.thingiverse.com", Path: "/things/" + id + "/files"},
@@ -144,25 +174,47 @@ func fetchFiles(id string, project *entities.Project, httpClient *http.Client) (
 		return nil, err
 	}
 
-	req.Method = "GET"
-	outChans := make([]<-chan []*types.ProcessableAsset, 0)
+	var assets []*entities.Asset
 	eg := errgroup.Group{}
+	assetChan := make(chan *entities.Asset, len(files))
+
 	for _, file := range files {
+		file := file
 		lReq := req.Clone(context.Background())
 		lReq.URL, _ = url.Parse(file.DownloadURL)
-		c, runner := utils.Jobber(func() ([]*types.ProcessableAsset, error) {
-			return tools.DownloadAsset(file.Name, project, httpClient, lReq)
+		eg.Go(func() error {
+			asset, err := tools.DownloadAsset(file.Name, parentAsset, httpClient, lReq)
+			if err != nil {
+				return err
+			}
+			if err := database.InsertAsset(asset); err != nil {
+				logger.GetLogger().Warn("failed to insert asset", zap.String("name", file.Name), zap.Error(err))
+			} else {
+				assetChan <- asset
+			}
+			return nil
 		})
-		outChans = append(outChans, c)
-		eg.Go(runner)
+	}
+
+	go func() {
+		eg.Wait()
+		close(assetChan)
+	}()
+
+	for asset := range assetChan {
+		assets = append(assets, asset)
+	}
+
+	if err := eg.Wait(); err != nil {
+		return assets, err
 	}
 
 	logger.GetLogger().Info("downloading thingiverse files", zap.Int("file_count", len(files)), zap.String("thing_id", id))
 
-	return utils.MergeSliceWait(outChans...), eg.Wait()
+	return assets, nil
 }
 
-func fetchImages(id string, project *entities.Project, httpClient *http.Client) ([]*types.ProcessableAsset, error) {
+func fetchImages(id string, parentAsset *entities.Asset, httpClient *http.Client) ([]*entities.Asset, error) {
 	req := &http.Request{
 		Method: "GET",
 		URL:    &url.URL{Scheme: "https", Host: "api.thingiverse.com", Path: "/things/" + id + "/images"},
@@ -181,30 +233,48 @@ func fetchImages(id string, project *entities.Project, httpClient *http.Client) 
 		return nil, err
 	}
 
-	req.Method = "GET"
-
-	outChans := make([]<-chan []*types.ProcessableAsset, 0)
+	var assets []*entities.Asset
 	eg := errgroup.Group{}
+	assetChan := make(chan *entities.Asset, len(tImages)*2)
 
 	for _, image := range tImages {
-
+		image := image
 		for _, size := range image.Sizes {
 			if size.Size == "large" && size.Type == "display" {
 				lReq := req.Clone(context.Background())
 				lReq.URL, _ = url.Parse(size.URL)
-				c, runner := utils.Jobber(func() ([]*types.ProcessableAsset, error) {
-					return tools.DownloadAsset(image.Name, project, httpClient, lReq)
+				eg.Go(func() error {
+					asset, err := tools.DownloadAsset(image.Name, parentAsset, httpClient, lReq)
+					if err != nil {
+						return err
+					}
+					if err := database.InsertAsset(asset); err != nil {
+						logger.GetLogger().Warn("failed to insert asset", zap.String("name", image.Name), zap.Error(err))
+					} else {
+						assetChan <- asset
+					}
+					return nil
 				})
-				outChans = append(outChans, c)
-				eg.Go(runner)
 			}
 		}
+	}
 
+	go func() {
+		eg.Wait()
+		close(assetChan)
+	}()
+
+	for asset := range assetChan {
+		assets = append(assets, asset)
+	}
+
+	if err := eg.Wait(); err != nil {
+		return assets, err
 	}
 
 	logger.GetLogger().Info("downloading thingiverse images", zap.Int("image_count", len(tImages)), zap.String("thing_id", id))
 
-	return utils.MergeSliceWait(outChans...), eg.Wait()
+	return assets, nil
 }
 
 type ThingImage struct {

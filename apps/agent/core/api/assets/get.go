@@ -1,4 +1,4 @@
-package projects
+package assets
 
 import (
 	"errors"
@@ -12,14 +12,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func list(c echo.Context) error {
-	rtn, err := database.GetProjectNames()
+func get(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("missing asset id"))
+	}
+
+	deep := c.QueryParam("deep") == "true"
+	asset, err := database.GetAsset(id, deep)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		logger.GetLogger().Error("failed to get project names", zap.Error(err))
+		logger.GetLogger().Error("failed to get asset", zap.String("asset_id", id), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	return c.JSON(http.StatusOK, rtn)
+
+	return c.JSON(http.StatusOK, asset)
 }

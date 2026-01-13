@@ -7,6 +7,8 @@
 		"dev": "vite",
 		"build": "vite build",
 		"lint": "pnpm exec biome check .",
+		"format": "biome format --write .",
+		"format:check": "biome check --write .",
 		"preview": "vite preview",
 		"clean": "rm -rf dist node_modules",
 		"test": "vitest",

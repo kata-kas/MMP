@@ -14,7 +14,7 @@ type ProjectDiscoverer interface {
 	Discover(root string) ([]types.ProcessableProject, error)
 }
 
-func shouldSkipFile(name string) bool {
+func ShouldSkipFile(name string) bool {
 
 	if strings.HasPrefix(name, ".") {
 		if runtime.Cfg.Library.IgnoreDotFiles {

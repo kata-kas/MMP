@@ -19,7 +19,7 @@ func ConnectionStatus(printer *entities.Printer) error {
 	return nil
 }
 
-func UploadFile(printer *entities.Printer, asset *entities.ProjectAsset) error {
+func UploadFile(printer *entities.Printer, asset *entities.Asset) error {
 	kp := &KlipperPrinter{printer}
 
 	return kp.ServerFilesUpload(asset)

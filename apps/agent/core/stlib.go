@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	assettypes "github.com/eduardooliveira/stLib/core/api/assetTypes"
-	"github.com/eduardooliveira/stLib/core/api/projects"
+	"github.com/eduardooliveira/stLib/core/api/assets"
 	"github.com/eduardooliveira/stLib/core/api/system"
 	"github.com/eduardooliveira/stLib/core/api/tags"
 	"github.com/eduardooliveira/stLib/core/api/tempfiles"
@@ -68,7 +68,7 @@ func Run(ctx context.Context, logger *zap.Logger) error {
 
 	api := e.Group("/api")
 	events.Register(api.Group("/events"))
-	projects.Register(api.Group("/projects"))
+	assets.Register(api.Group("/assets"))
 	tags.Register(api.Group("/tags"))
 	tempfiles.Register(api.Group("/tempfiles"))
 	printers.Register(api.Group("/printers"))
