@@ -3,7 +3,7 @@ package discovery
 import (
 	"context"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -11,24 +11,30 @@ import (
 
 	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/entities"
+	"github.com/eduardooliveira/stLib/core/libfs"
 	"github.com/eduardooliveira/stLib/core/runtime"
 )
 
-type RecursiveAssetDiscoverer struct {
-	ctx    context.Context
-	logger *zap.Logger
+type AssetProcessor interface {
+	Process(ctx context.Context, asset *entities.Asset)
 }
 
-func NewAssetDiscoverer(ctx context.Context, logger *zap.Logger) *RecursiveAssetDiscoverer {
+type RecursiveAssetDiscoverer struct {
+	ctx       context.Context
+	logger    *zap.Logger
+	processor AssetProcessor
+}
+
+func NewAssetDiscoverer(ctx context.Context, logger *zap.Logger, processor AssetProcessor) *RecursiveAssetDiscoverer {
 	return &RecursiveAssetDiscoverer{
-		ctx:    ctx,
-		logger: logger,
+		ctx:       ctx,
+		logger:    logger,
+		processor: processor,
 	}
 }
 
-func (d *RecursiveAssetDiscoverer) DiscoverFS(root string) error {
-	fsName := "default"
-	fsRoot := root
+func (d *RecursiveAssetDiscoverer) DiscoverFS(currFS libfs.LibFS) error {
+	fsName := currFS.GetName()
 
 	// Mark all assets in this filesystem as unseen
 	if err := database.SetDirtyFS(fsName); err != nil {
@@ -36,7 +42,7 @@ func (d *RecursiveAssetDiscoverer) DiscoverFS(root string) error {
 	}
 
 	// Discover recursively
-	_, err := d.discoverPath(fsName, fsRoot, "", nil)
+	_, err := d.discoverPath(currFS, ".", nil)
 	if err != nil {
 		return fmt.Errorf("failed to discover filesystem: %w", err)
 	}
@@ -49,52 +55,72 @@ func (d *RecursiveAssetDiscoverer) DiscoverFS(root string) error {
 	return nil
 }
 
-func (d *RecursiveAssetDiscoverer) discoverPath(fsName, fsRoot, relPath string, parent *entities.Asset) (*entities.Asset, error) {
-	fullPath := filepath.Join(fsRoot, relPath)
-	if relPath == "" {
-		fullPath = fsRoot
-	}
-
-	info, err := os.Stat(fullPath)
+func (d *RecursiveAssetDiscoverer) discoverPath(currFS libfs.LibFS, path string, parent *entities.Asset) (*entities.Asset, error) {
+	pathInfo, err := fs.Stat(currFS, path)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create asset
-	asset := entities.NewAsset(fsName, fsRoot, relPath, info.IsDir(), parent)
+	isDir := pathInfo.IsDir()
+	isBundle := libfs.IsBundle(path)
+
+	// Create asset using filesystem
+	asset := entities.NewAssetWithFS(currFS, currFS.GetName(), currFS.GetRoot(), path, isDir, parent)
 	seen := true
 	asset.SeenOnScan = &seen
 
 	// Save asset
 	if err := database.SaveAsset(asset); err != nil {
-		d.logger.Warn("failed to save asset", zap.String("path", relPath), zap.Error(err))
+		d.logger.Warn("failed to save asset", zap.String("path", path), zap.Error(err))
 	} else {
-		d.logger.Debug("discovered asset", zap.String("path", relPath), zap.String("node_kind", string(asset.NodeKind)))
+		d.logger.Debug("discovered asset", zap.String("path", path), zap.String("node_kind", string(asset.NodeKind)))
 	}
 
-	// If directory, discover children
-	if info.IsDir() {
-		entries, err := os.ReadDir(fullPath)
-		if err != nil {
-			return asset, err
+	// If directory or bundle, discover children
+	if isDir || isBundle {
+		innerFS := currFS
+		var files []fs.DirEntry
+
+		if isBundle {
+			// Get bundle filesystem
+			bundleFS, err := libfs.GetBundleFS(d.ctx, currFS, *asset)
+			if err != nil {
+				d.logger.Warn("failed to create bundle filesystem", zap.String("path", path), zap.Error(err))
+				return asset, nil
+			}
+			innerFS = bundleFS
+			files, err = fs.ReadDir(innerFS, ".")
+			if err != nil {
+				d.logger.Warn("failed to read bundle contents", zap.String("path", path), zap.Error(err))
+				return asset, nil
+			}
+			path = "."
+		} else {
+			files, err = fs.ReadDir(currFS, path)
+			if err != nil {
+				return asset, err
+			}
 		}
 
-		for _, entry := range entries {
-			if shouldSkipFile(entry.Name()) {
+		for _, file := range files {
+			if shouldSkipFile(file.Name()) {
 				continue
 			}
 
-			childPath := filepath.Join(relPath, entry.Name())
-			if relPath == "" {
-				childPath = entry.Name()
+			childPath := filepath.Join(path, file.Name())
+			if path == "." {
+				childPath = file.Name()
 			}
 
-			_, err := d.discoverPath(fsName, fsRoot, childPath, asset)
+			_, err := d.discoverPath(innerFS, childPath, asset)
 			if err != nil {
 				d.logger.Warn("failed to discover child", zap.String("path", childPath), zap.Error(err))
 				continue
 			}
 		}
+	}
+	if !pathInfo.IsDir() || (!libfs.IsBundle(path) || runtime.Cfg.Library.RenderBundles) {
+		d.processor.Process(d.ctx, asset)
 	}
 
 	return asset, nil

@@ -52,11 +52,13 @@ const TagsInput = React.forwardRef<HTMLInputElement, TagsInputProps>(
 		const [open, setOpen] = React.useState(false);
 		const inputRef = React.useRef<HTMLInputElement>(null);
 
+		const valueSet = React.useMemo(() => new Set(value), [value]);
+
 		const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 			if (e.key === "Enter" && inputValue.trim()) {
 				e.preventDefault();
 				const newValue = inputValue.trim();
-				if (!value.includes(newValue)) {
+				if (!valueSet.has(newValue)) {
 					onChange?.(value ? [...value, newValue] : [newValue]);
 				}
 				setInputValue("");
@@ -65,7 +67,7 @@ const TagsInput = React.forwardRef<HTMLInputElement, TagsInputProps>(
 			} else if (splitChars.includes(e.key) && inputValue.trim()) {
 				e.preventDefault();
 				const newValue = inputValue.trim();
-				if (!value.includes(newValue)) {
+				if (!valueSet.has(newValue)) {
 					onChange?.(value ? [...value, newValue] : [newValue]);
 				}
 				setInputValue("");
@@ -85,7 +87,7 @@ const TagsInput = React.forwardRef<HTMLInputElement, TagsInputProps>(
 		};
 
 		const addTag = (tag: string) => {
-			if (!value.includes(tag)) {
+			if (!valueSet.has(tag)) {
 				onChange?.(value ? [...value, tag] : [tag]);
 			}
 			setInputValue("");
@@ -93,13 +95,13 @@ const TagsInput = React.forwardRef<HTMLInputElement, TagsInputProps>(
 		};
 
 		const filteredData = React.useMemo(() => {
-			if (!inputValue) return data;
+			if (!inputValue) return data.filter((item) => !valueSet.has(item));
 			return data.filter(
 				(item) =>
 					item.toLowerCase().includes(inputValue.toLowerCase()) &&
-					!value.includes(item),
+					!valueSet.has(item),
 			);
-		}, [data, inputValue, value]);
+		}, [data, inputValue, valueSet]);
 
 		return (
 			<div className={cn("space-y-2", className)}>

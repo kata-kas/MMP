@@ -24,11 +24,23 @@ func MigrateToUnifiedAssetModel() error {
 		return fmt.Errorf("failed to create assets table: %w", err)
 	}
 
+	// Check if migration already completed (assets exist)
+	var existingAssetCount int64
+	if err := DB.Model(&entities.Asset{}).Count(&existingAssetCount).Error; err == nil && existingAssetCount > 0 {
+		log.Info("Assets already exist, skipping migration", zap.Int64("asset_count", existingAssetCount))
+		return nil
+	}
+
 	// Step 2: Migrate Projects to root Assets
 	log.Info("Step 2: Migrating projects to root assets")
 	var oldProjects []entities.Project
 	if err := DB.Find(&oldProjects).Error; err != nil {
 		return fmt.Errorf("failed to load projects: %w", err)
+	}
+
+	if len(oldProjects) == 0 {
+		log.Info("No projects to migrate")
+		return nil
 	}
 
 	libraryPath := runtime.Cfg.Library.Path
@@ -57,6 +69,14 @@ func MigrateToUnifiedAssetModel() error {
 
 		if project.ExternalLink != "" {
 			rootAsset.Properties["external_link"] = project.ExternalLink
+		}
+
+		// Check if asset already exists (by ID)
+		var existingAsset entities.Asset
+		if err := DB.Where("id = ?", newID).First(&existingAsset).Error; err == nil {
+			log.Debug("Root asset already exists, skipping", zap.String("project", project.Name), zap.String("asset_id", newID))
+			projectMap[project.UUID] = &existingAsset
+			continue
 		}
 
 		if err := DB.Create(rootAsset).Error; err != nil {
@@ -132,6 +152,13 @@ func MigrateToUnifiedAssetModel() error {
 		// Copy size if available
 		if oldAsset.Size > 0 {
 			newAsset.Properties["size"] = oldAsset.Size
+		}
+
+		// Check if asset already exists
+		var existingAsset entities.Asset
+		if err := DB.Where("id = ?", newID).First(&existingAsset).Error; err == nil {
+			log.Debug("Nested asset already exists, skipping", zap.String("asset", oldAsset.Name), zap.String("asset_id", newID))
+			continue
 		}
 
 		if err := DB.Create(newAsset).Error; err != nil {

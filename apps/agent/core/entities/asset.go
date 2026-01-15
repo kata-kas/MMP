@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -44,12 +45,20 @@ type Asset struct {
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
-func NewAsset(fsName, root, path string, isDir bool, parent *Asset) *Asset {
-	ext := filepath.Ext(path)
+type LibFS interface {
+	IsBundle(path string) bool
+	Kind() string
+}
 
-	data := []byte(filepath.Join(fsName, root, path))
-	md5Hash := md5.Sum(data)
-	id := hex.EncodeToString(md5Hash[:])
+// NewAsset creates a new asset with optional filesystem context
+func NewAsset(fsName, root, path string, isDir bool, parent *Asset) *Asset {
+	return NewAssetWithFS(nil, fsName, root, path, isDir, parent)
+}
+
+// NewAssetWithFS creates a new asset with filesystem context for bundle detection
+func NewAssetWithFS(fs LibFS, fsName, root, path string, isDir bool, parent *Asset) *Asset {
+	ext := filepath.Ext(path)
+	id := generateAssetID(fsName, root, path)
 
 	asset := &Asset{
 		ID:         id,
@@ -67,21 +76,67 @@ func NewAsset(fsName, root, path string, isDir bool, parent *Asset) *Asset {
 		asset.ParentID = &parent.ID
 	}
 
-	if isDir {
-		if parent == nil {
-			asset.NodeKind = NodeKindRoot
-			if fsName != "" {
-				asset.Label = utils.Ptr(fsName)
-			}
-		} else {
-			asset.NodeKind = NodeKindDir
-		}
-		asset.Kind = utils.Ptr("dir")
-	} else {
-		asset.NodeKind = NodeKindFile
-	}
+	// Determine asset type and kind
+	asset.NodeKind, asset.FSKind, asset.Kind = determineAssetType(path, isDir, parent, fs, ext, fsName)
 
 	return asset
+}
+
+func generateAssetID(fsName, root, path string) string {
+	data := []byte(filepath.Join(fsName, root, path))
+	md5Hash := md5.Sum(data)
+	return hex.EncodeToString(md5Hash[:])
+}
+
+func determineAssetType(path string, isDir bool, parent *Asset, fs LibFS, ext, fsName string) (NodeKind, string, *string) {
+	// Bundle detection
+	if fs != nil && fs.IsBundle(path) {
+		return NodeKindBundle, "bundle", utils.Ptr("bundle")
+	}
+
+	// Asset inside a bundle
+	if fs != nil && fs.Kind() == "bundle" {
+		kind := inferKindFromExtension(ext)
+		return NodeKindBundled, "bundle", kind
+	}
+
+	// Directory handling
+	if isDir {
+		if parent == nil {
+			label := fsName
+			if label == "" {
+				label = filepath.Base(path)
+			}
+			return NodeKindRoot, "local", utils.Ptr("dir")
+		}
+		return NodeKindDir, "local", utils.Ptr("dir")
+	}
+
+	// File handling
+	kind := inferKindFromExtension(ext)
+	return NodeKindFile, "local", kind
+}
+
+func inferKindFromExtension(ext string) *string {
+	if ext == "" {
+		return nil
+	}
+
+	extMap := map[string][]string{
+		"image":  {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg"},
+		"model":  {".stl", ".3mf", ".obj", ".ply"},
+		"slice":  {".gcode"},
+		"source": {".stp", ".step", ".ste", ".fbx", ".f3d", ".f3z", ".iam", ".ipt"},
+	}
+
+	extLower := strings.ToLower(ext)
+	for kind, exts := range extMap {
+		if slices.Contains(exts, extLower) {
+			return utils.Ptr(kind)
+		}
+	}
+
+	return nil
 }
 
 func (a *Asset) bubbleThumbnail(tx *gorm.DB) error {

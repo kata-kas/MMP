@@ -28,9 +28,9 @@ export function DiscoveryNotifications() {
 	}, [connected, subscriberId, subscribe, unsubscribe]);
 
 	useEffect(() => {
-		if (!message.state) return;
-		const state = message.state as Record<string, unknown>;
-		if (state?.state === "started") {
+		if (!message["state"]) return;
+		const state = message["state"] as Record<string, unknown>;
+		if (state?.["state"] === "started") {
 			const id = toast.loading("New Scan started", {
 				description: "Let's find new projects!",
 			});

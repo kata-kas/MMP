@@ -1,15 +1,9 @@
 import { lazy, Suspense } from "react";
 import { Outlet } from "react-router-dom";
-import { Separator } from "@/components/ui/separator";
-import {
-	SidebarInset,
-	SidebarProvider,
-	SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { Skeleton } from "./components/ui/skeleton";
 import { AxiosErrorInterceptor } from "./core/axios-error-handler/AxiosErrorInterceptor";
-import { Breadcrumbs } from "./core/breadcrumbs/Breadcrumbs";
 import { ErrorBoundary } from "./core/error-boundary/ErrorBoundary";
 import { SettingsErrorFallback } from "./core/error-boundary/SettingsErrorFallback";
 import { NotificationErrorFallback } from "./core/notifications/NotificationErrorFallback";
@@ -17,10 +11,16 @@ import { OfflineProvider } from "./core/offline/OfflineContext";
 import { ScrollToTop } from "./core/scroll-to-top/ScrollToTop.tsx";
 import { SettingsProvider } from "./core/settings/settingsProvider.tsx";
 import { SSEProvider } from "./core/sse/SSEProvider.tsx";
+import { SearchDialog } from "./core/search/SearchDialog";
+import {
+	setSearchDialogOpen,
+	useSearchDialogOpen,
+} from "./core/search/searchDialogStore";
 import { ToastProvider } from "./core/toast/ToastContext";
 import { Z_INDEX } from "./core/z-index";
 import { DashboardProvider } from "./dashboard/provider/DashboardProvider.tsx";
 import { PrinterWidgetProvider } from "./printers/providers/PrinterWidgetProvider.tsx";
+import { BreadcrumbProvider } from "./core/breadcrumbs/BreadcrumbContext";
 
 const Notifications = lazy(() => import("./core/notifications/Notifications"));
 
@@ -36,46 +36,45 @@ const LoadingFallback = () => (
 const NotificationLoadingFallback = () => null;
 
 export default function App() {
+	const searchOpen = useSearchDialogOpen();
+
 	return (
 		<SettingsProvider loading={<LoadingFallback />}>
-			<ErrorBoundary fallback={SettingsErrorFallback}>
-				<ToastProvider>
-					<OfflineProvider>
-						<AxiosErrorInterceptor />
-						<SSEProvider>
-							<DashboardProvider>
-								<PrinterWidgetProvider />
-								<SidebarProvider>
-									<AppSidebar />
-									<SidebarInset>
-										<header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-											<SidebarTrigger className="-ml-1" />
-											<Separator
-												orientation="vertical"
-												className="mr-2 data-[orientation=vertical]:h-4"
-											/>
-											<Breadcrumbs />
-										</header>
-										<div className="flex flex-1 flex-col gap-4 p-4">
-											<Suspense fallback={<LoadingFallback />}>
-												<ErrorBoundary>
-													<Outlet />
-												</ErrorBoundary>
-											</Suspense>
-										</div>
-									</SidebarInset>
-								</SidebarProvider>
-								<ScrollToTop />
-								<ErrorBoundary fallback={NotificationErrorFallback}>
-									<Suspense fallback={<NotificationLoadingFallback />}>
-										<Notifications />
-									</Suspense>
-								</ErrorBoundary>
-							</DashboardProvider>
-						</SSEProvider>
-					</OfflineProvider>
-				</ToastProvider>
-			</ErrorBoundary>
+			<BreadcrumbProvider>
+				<ErrorBoundary fallback={SettingsErrorFallback}>
+					<ToastProvider>
+						<OfflineProvider>
+							<AxiosErrorInterceptor />
+							<SSEProvider>
+								<DashboardProvider>
+									<PrinterWidgetProvider />
+									<SidebarProvider>
+										<AppSidebar />
+										<SidebarInset>
+											<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+												<Suspense fallback={<LoadingFallback />}>
+													<ErrorBoundary>
+														<div className="min-h-0 flex-1 overflow-auto">
+															<Outlet />
+														</div>
+													</ErrorBoundary>
+												</Suspense>
+											</div>
+										</SidebarInset>
+									</SidebarProvider>
+									<ScrollToTop />
+									<ErrorBoundary fallback={NotificationErrorFallback}>
+										<Suspense fallback={<NotificationLoadingFallback />}>
+											<Notifications />
+										</Suspense>
+									</ErrorBoundary>
+								</DashboardProvider>
+							</SSEProvider>
+						</OfflineProvider>
+					</ToastProvider>
+				</ErrorBoundary>
+			</BreadcrumbProvider>
+			<SearchDialog open={searchOpen} onOpenChange={setSearchDialogOpen} />
 		</SettingsProvider>
 	);
 }

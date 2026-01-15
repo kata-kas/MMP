@@ -5,7 +5,6 @@ import (
 )
 
 func Register(e *echo.Group) {
-
 	group := e
 	group.GET("", index)
 }

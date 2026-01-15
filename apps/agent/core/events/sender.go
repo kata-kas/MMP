@@ -1,35 +1,25 @@
 package events
 
 import (
-	"encoding/json"
-
-	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
-type Message struct {
-	Event string `json:"event"`
-	Data  any    `json:"data"`
+type SSESender struct {
+	w       http.ResponseWriter
+	flusher http.Flusher
 }
 
-type sseSender struct {
-	response *echo.Response
-	enc      *json.Encoder
+func NewSSESender(w http.ResponseWriter) *SSESender {
+	flusher, _ := w.(http.Flusher)
+	return &SSESender{w: w, flusher: flusher}
 }
 
-func NewSSESender(response *echo.Response) *sseSender {
-	return &sseSender{
-		response: response,
-		enc:      json.NewEncoder(response),
-	}
-}
-
-func (sender *sseSender) send(message *Message) error {
-
-	sender.response.Write([]byte("data: "))
-	if err := sender.enc.Encode(message); err != nil {
+func (s *SSESender) send(msg *Message) error {
+	if err := msg.WriteToSSE(s.w); err != nil {
 		return err
 	}
-	sender.response.Write([]byte("\n\n"))
-	sender.response.Flush()
+	if s.flusher != nil {
+		s.flusher.Flush()
+	}
 	return nil
 }

@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"go.uber.org/zap"
 
 	"github.com/Maker-Management-Platform/fauxgl"
+	"github.com/eduardooliveira/stLib/core/data/database"
+	"github.com/eduardooliveira/stLib/core/entities"
 	"github.com/eduardooliveira/stLib/core/logger"
 	"github.com/eduardooliveira/stLib/core/processing/types"
 	"github.com/eduardooliveira/stLib/core/runtime"
@@ -93,5 +97,76 @@ func (s *stlRenderer) Render(job types.ProcessableAsset) (string, error) {
 
 	utils.CreateAssetsFolder(job.Project.UUID)
 
-	return renderName, fauxgl.SavePNG(renderSavePath, image)
+	if err := fauxgl.SavePNG(renderSavePath, image); err != nil {
+		return "", err
+	}
+
+	// Create Asset entity for rendered image and link to model
+	if err := s.createRenderedImageAsset(job, renderName, renderSavePath); err != nil {
+		logger.GetLogger().Warn("failed to create rendered image asset", zap.String("render_name", renderName), zap.Error(err))
+	}
+
+	return renderName, nil
+}
+
+func (s *stlRenderer) createRenderedImageAsset(job types.ProcessableAsset, renderName, renderPath string) error {
+	projectPath := filepath.Join(job.Project.Path, job.Project.Name)
+	assetPath := filepath.Join(projectPath, job.Asset.Name)
+	modelAssetID := calculateAssetID("default", runtime.Cfg.Library.Path, assetPath)
+
+	modelAsset, err := database.GetAsset(modelAssetID, false)
+	if err != nil {
+		logger.GetLogger().Debug("model asset not found, skipping thumbnail link", zap.String("model_id", modelAssetID), zap.Error(err))
+		return nil
+	}
+
+	// Calculate Asset ID for rendered image
+	// Rendered images are stored in assets folder, use a special path format
+	renderAssetPath := filepath.Join("_assets", job.Project.UUID, renderName)
+	renderAssetID := calculateAssetID("default", runtime.Cfg.Library.Path, renderAssetPath)
+
+	_, err = database.GetAsset(renderAssetID, false)
+	if err == nil {
+		// Asset exists, just link it
+		if modelAsset.Thumbnail == nil {
+			modelAsset.Thumbnail = &renderAssetID
+			return database.SaveAsset(&modelAsset)
+		}
+		return nil
+	}
+
+	// Create new Asset entity for rendered image
+	ext := filepath.Ext(renderName)
+	label := strings.TrimSuffix(renderName, ext)
+	kind := "image"
+
+	renderAsset := &entities.Asset{
+		ID:         renderAssetID,
+		Label:      &label,
+		Path:       &renderAssetPath,
+		Root:       runtime.Cfg.Library.Path,
+		FSKind:     "local",
+		FSName:     "default",
+		Extension:  &ext,
+		Kind:       &kind,
+		NodeKind:   entities.NodeKindFile,
+		ParentID:   modelAsset.ParentID,
+		Properties: make(entities.Properties),
+	}
+
+	// Store the actual file path in properties for file access
+	renderAsset.Properties["render_path"] = renderPath
+	renderAsset.Properties["origin"] = "render"
+
+	if err := database.InsertAsset(renderAsset); err != nil {
+		return fmt.Errorf("failed to insert rendered image asset: %w", err)
+	}
+
+	// Link to model
+	if modelAsset.Thumbnail == nil {
+		modelAsset.Thumbnail = &renderAssetID
+		return database.SaveAsset(&modelAsset)
+	}
+
+	return nil
 }

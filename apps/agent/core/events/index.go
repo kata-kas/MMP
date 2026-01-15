@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -11,46 +12,77 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const (
+	connectDelay    = 500 * time.Millisecond
+	heartbeatPeriod = 30 * time.Second
+)
+
 func index(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, "text/event-stream")
+	c.Response().Header().Set(echo.HeaderCacheControl, "no-cache")
+	c.Response().Header().Set(echo.HeaderConnection, "keep-alive")
 	c.Response().WriteHeader(http.StatusOK)
-	uuid := uuid.New().String()
 
-	//uuid := "batata"
+	sessionID := uuid.New().String()
+	log := logger.GetLogger().With(
+		zap.String("session_id", sessionID),
+		zap.String("remote_addr", c.RealIP()),
+	)
+
 	sender := NewSSESender(c.Response())
+	ctx := c.Request().Context()
 
-	go func() {
+	eventChan, unregister := RegisterSession(sessionID)
+	defer unregister()
 
-		time.Sleep(500 * time.Millisecond)
-		err := sender.send(&Message{
-			Event: "connect",
-			Data: map[string]string{
-				"uuid": uuid,
-			},
-		})
-		if err != nil {
-			logger.GetLogger().Error("failed to send connect message", zap.String("session_uuid", uuid), zap.Error(err))
-		}
-	}()
+	if err := sendConnectMessage(ctx, sender, sessionID, log); err != nil {
+		log.Error("failed to send connect message", zap.Error(err))
+		return err
+	}
 
-	eventChan, unregister := RegisterSession(uuid)
+	heartbeat := time.NewTicker(heartbeatPeriod)
+	defer heartbeat.Stop()
 
 	for {
 		select {
-		case <-c.Request().Context().Done():
-			unregister()
+		case <-ctx.Done():
+			log.Debug("client disconnected")
 			return nil
-		case s, ok := <-eventChan:
+
+		case event, ok := <-eventChan:
 			if !ok {
-				logger.GetLogger().Debug("event channel closed, closing client", zap.String("session_uuid", uuid))
-				close(eventChan)
+				log.Debug("event stream closed by server")
 				return nil
 			}
-			err := sender.send(s)
-			if err != nil {
-				logger.GetLogger().Error("failed to send event", zap.String("session_uuid", uuid), zap.String("event", s.Event), zap.Error(err))
+			if err := sender.send(event); err != nil {
+				log.Error("failed to send event",
+					zap.String("event", event.Event),
+					zap.Error(err))
+				return err
+			}
+
+		case <-heartbeat.C:
+			if err := sender.send(&Message{Event: "heartbeat"}); err != nil {
+				log.Debug("heartbeat failed, client likely disconnected", zap.Error(err))
 				return err
 			}
 		}
+	}
+}
+
+func sendConnectMessage(ctx context.Context, sender *SSESender, sessionID string, log *zap.Logger) error {
+	timer := time.NewTimer(connectDelay)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return sender.send(&Message{
+			Event: "connect",
+			Data: map[string]string{
+				"session_id": sessionID,
+			},
+		})
 	}
 }

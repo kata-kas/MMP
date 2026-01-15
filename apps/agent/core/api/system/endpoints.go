@@ -35,7 +35,7 @@ func paths(c echo.Context) error {
 			return nil
 		}
 
-		path = strings.TrimLeft(path, runtime.Cfg.Library.Path)
+		path = strings.TrimPrefix(path, runtime.Cfg.Library.Path)
 		projectsPath := filepath.Clean(fmt.Sprintf("/%s", filepath.Dir(path)))
 		projectName := filepath.Base(path)
 
@@ -72,7 +72,7 @@ func saveSettings(c echo.Context) error {
 
 func runDiscovery(c echo.Context) error {
 	go func() {
-		err := processing.ProcessFolder(context.Background(), runtime.Cfg.Library.Path, logger.GetLogger())
+		err := processing.ScanFS(context.Background(), logger.GetLogger())
 		if err != nil {
 			logger.GetLogger().Error("discovery error", zap.Error(err))
 		}

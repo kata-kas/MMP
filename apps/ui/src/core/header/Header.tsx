@@ -74,7 +74,7 @@ export function Header({
 
 	return (
 		<div
-			className="relative flex min-h-[400px] items-center justify-center bg-cover bg-center bg-no-repeat"
+			className="relative flex min-h-[200px] items-center justify-center bg-cover bg-center bg-no-repeat"
 			style={{ backgroundImage: `url(${loading ? fallbackImage : img})` }}
 		>
 			<div className="absolute inset-0 bg-black/65 z-[1]" />

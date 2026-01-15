@@ -27,15 +27,15 @@ export function NewProjectNotification() {
 	}, [connected, subscriberId, subscribe, unsubscribe]);
 
 	useEffect(() => {
-		if (!message.state) return;
-		const state = message.state as Record<string, unknown>;
-		if (state?.type === "new") {
+		if (!message["state"]) return;
+		const state = message["state"] as Record<string, unknown>;
+		if (state?.["type"] === "new") {
 			toast.success(`New project found`, {
 				description: (
 					<span>
 						Go to{" "}
-						<Link to={`/projects/${state?.projectUUID}`} className="underline">
-							{state?.projectName as string}
+						<Link to={`/projects/${state?.["projectUUID"]}`} className="underline">
+							{state?.["projectName"] as string}
 						</Link>
 					</span>
 				),

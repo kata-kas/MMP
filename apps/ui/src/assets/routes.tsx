@@ -15,6 +15,11 @@ const AssetsList = lazy(() =>
 		(m) => ({ default: m.AssetsList }),
 	),
 );
+const AssetsEmpty = lazy(() =>
+	import("./components/assets-page/parts/assets-empty/AssetsEmpty.tsx").then(
+		(m) => ({ default: m.AssetsEmpty }),
+	),
+);
 
 export const routes = [
 	{
@@ -24,16 +29,16 @@ export const routes = [
 			{
 				path: "",
 				index: true,
-				element: <AssetsList />,
+				element: <AssetsEmpty />,
 			},
 			{
 				path: "list",
 				element: <AssetsList />,
 			},
+			{
+				path: ":id",
+				element: <AssetPage />,
+			},
 		],
-	},
-	{
-		path: ":id",
-		element: <AssetPage />,
 	},
 ];

@@ -1,10 +1,10 @@
-import { createContext } from "react";
+import {createContext, SetStateAction} from "react";
 
 export type Subscription = {
 	subscriberId: string;
 	provider: string;
 	event: string;
-	callback: (data: unknown) => void;
+	callback: (data: SetStateAction<Record<string, unknown>>) => void;
 };
 
 interface SSEConnectionContextType {

@@ -1,159 +1,180 @@
 package events
 
 import (
-	"errors"
+	"context"
+	"fmt"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
+)
 
-	"github.com/eduardooliveira/stLib/core/logger"
+const (
+	sessionBufferSize = 100
+	sendTimeout       = 100 * time.Millisecond
 )
 
 type session struct {
-	ID            string
-	Out           chan *Message
+	id            string
+	out           chan *Message
 	subscriptions map[string]struct{}
 }
 
-type stateType struct {
-	sessions      map[string]*session
-	subscriptions map[string]map[string]*session
-	publishers    map[string]Publisher
-	globalLock    sync.Mutex
+type topicState struct {
+	publisher   Publisher
+	subscribers map[string]*session
+	cancel      context.CancelFunc
+}
+
+type Manager struct {
+	sessions sync.Map // string -> *session
+	topics   sync.Map // string -> *topicState
+	log      *zap.Logger
 }
 
 type Publisher interface {
-	Start() error
+	Start(context.Context) error
 	Stop() error
-	OnNewSub() error
-	Read() chan *Message
+	OnNewSubscriber() error
+	Messages() <-chan *Message
 }
 
-var state *stateType
-
-func init() {
-	state = &stateType{
-		sessions:      make(map[string]*session),
-		subscriptions: make(map[string]map[string]*session),
-		publishers:    make(map[string]Publisher),
-		globalLock:    sync.Mutex{},
-	}
+func NewManager(log *zap.Logger) *Manager {
+	return &Manager{log: log}
 }
 
-func RegisterSession(id string) (chan *Message, func()) {
-	state.globalLock.Lock()
-	defer state.globalLock.Unlock()
-	state.sessions[id] = &session{
-		ID:            id,
-		Out:           make(chan *Message, 100),
-		subscriptions: make(map[string]struct{}, 0),
+func (m *Manager) RegisterSession(id string) (<-chan *Message, func()) {
+	sess := &session{
+		id:            id,
+		out:           make(chan *Message, sessionBufferSize),
+		subscriptions: make(map[string]struct{}),
 	}
-	return state.sessions[id].Out, func() {
-		state.globalLock.Lock()
-		defer state.globalLock.Unlock()
 
-		for topic := range state.sessions[id].subscriptions {
-			delete(state.subscriptions[topic], id)
-			if len(state.subscriptions[topic]) == 0 {
-				delete(state.subscriptions, topic)
+	m.sessions.Store(id, sess)
 
-				delete(state.publishers, topic)
-			}
+	unregister := func() {
+		m.sessions.Delete(id)
+
+		for topic := range sess.subscriptions {
+			m.unsubscribe(id, topic)
 		}
-		delete(state.sessions, id)
+
+		close(sess.out)
 	}
+
+	return sess.out, unregister
 }
 
-func Subscribe(sessionId string, topic string, publisher Publisher) error {
-	state.globalLock.Lock()
-	defer state.globalLock.Unlock()
-
-	sess, ok := state.sessions[sessionId]
+func (m *Manager) Subscribe(sessionID, topic string, publisher Publisher) error {
+	sessVal, ok := m.sessions.Load(sessionID)
 	if !ok {
-		logger.GetLogger().Warn("session not found", zap.String("session_id", sessionId))
-		return errors.New("session not found")
+		return fmt.Errorf("session %s not found", sessionID)
 	}
+	sess := sessVal.(*session)
 
-	_, ok = state.publishers[topic]
-	if !ok {
-		err := publisher.Start()
-		if err != nil {
-			logger.GetLogger().Error("failed to start topic publisher", zap.String("topic", topic), zap.Error(err))
-			return err
+	ts, loaded := m.topics.LoadOrStore(topic, &topicState{
+		publisher:   publisher,
+		subscribers: make(map[string]*session),
+	})
+	topicState := ts.(*topicState)
+
+	if !loaded {
+		ctx, cancel := context.WithCancel(context.Background())
+		topicState.cancel = cancel
+
+		if err := publisher.Start(ctx); err != nil {
+			m.topics.Delete(topic)
+			cancel()
+			return fmt.Errorf("failed to start publisher for %s: %w", topic, err)
 		}
-		state.publishers[topic] = publisher
+
+		go m.runPublisher(ctx, topic, topicState)
 	}
 
-	if _, ok := state.subscriptions[topic]; !ok {
-		state.subscriptions[topic] = make(map[string]*session, 0)
-		state.subscriptions[topic][sess.ID] = sess
-		go runSubscription(topic)
-	} else {
-		state.subscriptions[topic][sess.ID] = sess
-	}
+	topicState.subscribers[sessionID] = sess
+	sess.subscriptions[topic] = struct{}{}
 
-	state.sessions[sessionId].subscriptions[topic] = struct{}{}
+	go func() {
+		if err := publisher.OnNewSubscriber(); err != nil {
+			m.log.Error("OnNewSubscriber failed",
+				zap.String("topic", topic),
+				zap.Error(err))
+		}
+	}()
 
-	state.publishers[topic].OnNewSub()
 	return nil
 }
 
-func UnSubscribe(sessionId string, topic string) {
-	state.globalLock.Lock()
-	defer state.globalLock.Unlock()
+func (m *Manager) Unsubscribe(sessionID, topic string) {
+	m.unsubscribe(sessionID, topic)
+}
 
-	_, ok := state.subscriptions[topic]
+func (m *Manager) unsubscribe(sessionID, topic string) {
+	tsVal, ok := m.topics.Load(topic)
 	if !ok {
-
 		return
 	}
-	delete(state.subscriptions[topic], sessionId)
+	ts := tsVal.(*topicState)
 
-	delete(state.sessions[sessionId].subscriptions, topic)
+	delete(ts.subscribers, sessionID)
 
-	if len(state.subscriptions[topic]) == 0 {
-		delete(state.subscriptions, topic)
-		pub, ok := state.publishers[topic]
-		if ok {
-			if err := pub.Stop(); err != nil {
-				logger.GetLogger().Error("failed to stop publisher", zap.String("topic", topic), zap.Error(err))
-			}
-			delete(state.publishers, topic)
+	if sessVal, ok := m.sessions.Load(sessionID); ok {
+		sess := sessVal.(*session)
+		delete(sess.subscriptions, topic)
+	}
+
+	if len(ts.subscribers) == 0 {
+		m.topics.Delete(topic)
+		ts.cancel()
+
+		if err := ts.publisher.Stop(); err != nil {
+			m.log.Error("failed to stop publisher",
+				zap.String("topic", topic),
+				zap.Error(err))
 		}
 	}
 }
 
-func runSubscription(topic string) {
-	publisher, ok := state.publishers[topic]
-	if !ok {
-		logger.GetLogger().Warn("publisher not found", zap.String("topic", topic))
-		return
-	}
-	for msg := range publisher.Read() {
-		subCount := 0
+func (m *Manager) runPublisher(ctx context.Context, topic string, ts *topicState) {
+	defer func() {
+		m.topics.Delete(topic)
 
-		for _, sess := range state.subscriptions[topic] {
-			subCount++
-			sess.Out <- msg
-
+		for _, sess := range ts.subscribers {
+			delete(sess.subscriptions, topic)
 		}
+	}()
 
-		if subCount == 0 {
-			logger.GetLogger().Info("no subscribers found for topic, stopping publisher", zap.String("topic", topic))
-			err := publisher.Stop()
-			if err != nil {
-				logger.GetLogger().Error("failed to stop publisher", zap.String("topic", topic), zap.Error(err))
-			}
+	for {
+		select {
+		case <-ctx.Done():
+			m.log.Debug("publisher stopped", zap.String("topic", topic))
 			return
+
+		case msg, ok := <-ts.publisher.Messages():
+			if !ok {
+				m.log.Info("publisher closed", zap.String("topic", topic))
+				return
+			}
+
+			if len(ts.subscribers) == 0 {
+				m.log.Debug("no subscribers, stopping publisher",
+					zap.String("topic", topic))
+				return
+			}
+
+			m.broadcast(topic, ts, msg)
 		}
 	}
-	state.globalLock.Lock()
-	defer state.globalLock.Unlock()
-	delete(state.publishers, topic)
+}
 
-	for _, sess := range state.subscriptions[topic] {
-		delete(sess.subscriptions, topic)
+func (m *Manager) broadcast(topic string, ts *topicState, msg *Message) {
+	for id, sess := range ts.subscribers {
+		select {
+		case sess.out <- msg:
+		case <-time.After(sendTimeout):
+			m.log.Warn("subscriber slow, skipping message",
+				zap.String("topic", topic),
+				zap.String("session_id", id))
+		}
 	}
-
-	delete(state.subscriptions, topic)
 }

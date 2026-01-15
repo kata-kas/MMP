@@ -73,7 +73,7 @@ export const Complete: Story = {
 									</div>
 									<CardHeader>
 										<CardTitle className="text-base">
-											{asset.label || asset.name}
+											{asset.label || asset.fs_name}
 										</CardTitle>
 										<CardDescription className="text-xs">
 											{asset.asset_type} • {(asset.size / 1024).toFixed(0)} KB

@@ -13,18 +13,23 @@ import (
 	"gorm.io/gorm"
 )
 
+type updateAssetRequest struct {
+	Label       *string             `json:"label"`
+	Description *string             `json:"description,omitempty"`
+	Properties  entities.Properties `json:"properties,omitempty"`
+	Tags        *[]*entities.Tag    `json:"tags,omitempty"`
+}
+
 func update(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.New("missing asset id"))
 	}
 
-	var asset entities.Asset
-	if err := c.Bind(&asset); err != nil {
+	var req updateAssetRequest
+	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-
-	asset.ID = id
 
 	// Verify asset exists
 	existing, err := database.GetAsset(id, false)
@@ -36,24 +41,39 @@ func update(c echo.Context) error {
 	}
 
 	// Update allowed fields
-	if asset.Label != nil {
-		existing.Label = asset.Label
+	if req.Label != nil {
+		existing.Label = req.Label
 	}
-	if asset.Description != nil {
-		existing.Description = asset.Description
+	if req.Description != nil {
+		existing.Description = req.Description
 	}
-	if asset.Properties != nil {
-		existing.Properties = asset.Properties
-	}
-
-	// Update tags if provided
-	if len(asset.Tags) > 0 {
-		existing.Tags = asset.Tags
+	if req.Properties != nil {
+		existing.Properties = req.Properties
 	}
 
-	if err := database.SaveAsset(&existing); err != nil {
+	if err := database.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("NestedAssets").Save(&existing).Error; err != nil {
+			return err
+		}
+
+		if req.Tags != nil {
+			if err := database.EnsureTags(tx, *req.Tags); err != nil {
+				return err
+			}
+			if err := tx.Model(&existing).Association("Tags").Replace(*req.Tags); err != nil {
+				return err
+			}
+			existing.Tags = *req.Tags
+		}
+
+		return nil
+	}); err != nil {
 		logger.GetLogger().Error("failed to update asset", zap.String("asset_id", id), zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := database.DB.Preload("Tags").First(&existing, "id = ?", id).Error; err != nil {
+		logger.GetLogger().Warn("failed to reload updated asset tags", zap.String("asset_id", id), zap.Error(err))
 	}
 
 	return c.JSON(http.StatusOK, existing)

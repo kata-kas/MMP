@@ -15,12 +15,38 @@ import (
 
 func listRoots(c echo.Context) error {
 	deep := c.QueryParam("deep") == "true"
-	assets, err := database.GetAssetRoots(deep)
+
+	page := 0
+	if pageStr := c.QueryParam("page"); pageStr != "" {
+		var err error
+		page, err = strconv.Atoi(pageStr)
+		if err != nil || page < 1 {
+			page = 1
+		}
+		page-- // Convert to 0-based
+	}
+
+	perPage := 20
+	if perPageStr := c.QueryParam("per_page"); perPageStr != "" {
+		var err error
+		perPage, err = strconv.Atoi(perPageStr)
+		if err != nil || perPage < 1 {
+			perPage = 20
+		}
+	}
+
+	assets, totalPages, err := database.GetAssetRootsPaginated(deep, page, perPage)
 	if err != nil {
 		logger.GetLogger().Error("failed to get root assets", zap.Error(err))
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	return c.JSON(http.StatusOK, assets)
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"assets":      assets,
+		"total_pages": totalPages,
+		"page":        page + 1,
+		"per_page":    perPage,
+	})
 }
 
 func listNested(c echo.Context) error {

@@ -9,17 +9,29 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { breadcrumbMap } from "./breadcrumb-config";
+import { useBreadcrumbs } from "./BreadcrumbContext";
 
 interface BreadcrumbItemData {
-	routeTo: string;
+	routeTo?: string;
 	isLast: boolean;
 	displayName: string;
 }
 
 export function Breadcrumbs() {
 	const location = useLocation();
+	const { items: customItems } = useBreadcrumbs();
 
 	const breadcrumbItems = useMemo((): BreadcrumbItemData[] => {
+		// If custom items are provided via context, use them
+		if (customItems && customItems.length > 0) {
+			return customItems.map((item, index) => ({
+				displayName: item.label,
+				routeTo: item.path,
+				isLast: index === customItems.length - 1,
+			}));
+		}
+
+		// Fallback to URL-based breadcrumbs
 		const segments = location.pathname.split("/").filter((x) => x);
 		return segments.map((name, index) => {
 			const routeTo = `/${segments.slice(0, index + 1).join("/")}`;
@@ -27,38 +39,31 @@ export function Breadcrumbs() {
 			const displayName = breadcrumbMap[name] || name;
 			return { routeTo, isLast, displayName };
 		});
-	}, [location.pathname]);
+	}, [location.pathname, customItems]);
 
 	return (
 		<Breadcrumb>
 			<BreadcrumbList>
-				{breadcrumbItems.length === 0 ? (
-					<BreadcrumbItem>
-						<BreadcrumbPage>Dashboard</BreadcrumbPage>
-					</BreadcrumbItem>
-				) : (
-					<>
-						<BreadcrumbItem className="hidden md:block">
-							<BreadcrumbLink asChild>
-								<Link to="/">Dashboard</Link>
-							</BreadcrumbLink>
-						</BreadcrumbItem>
-						{breadcrumbItems.map(({ routeTo, isLast, displayName }) => (
-							<div key={routeTo} className="flex items-center">
+				{breadcrumbItems.map(({ routeTo, isLast, displayName }, index) => {
+					const showSeparator = index < breadcrumbItems.length - 1;
+
+					return (
+						<div key={routeTo || index} className="flex items-center">
+							<BreadcrumbItem>
+								{isLast || !routeTo ? (
+									<BreadcrumbPage>{displayName}</BreadcrumbPage>
+								) : (
+									<BreadcrumbLink asChild>
+										<Link to={routeTo}>{displayName}</Link>
+									</BreadcrumbLink>
+								)}
+							</BreadcrumbItem>
+							{showSeparator && (
 								<BreadcrumbSeparator className="hidden md:block" />
-								<BreadcrumbItem>
-									{isLast ? (
-										<BreadcrumbPage>{displayName}</BreadcrumbPage>
-									) : (
-										<BreadcrumbLink asChild>
-											<Link to={routeTo}>{displayName}</Link>
-										</BreadcrumbLink>
-									)}
-								</BreadcrumbItem>
-							</div>
-						))}
-					</>
-				)}
+							)}
+						</div>
+					);
+				})}
 			</BreadcrumbList>
 		</Breadcrumb>
 	);

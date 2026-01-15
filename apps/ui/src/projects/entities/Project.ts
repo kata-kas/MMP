@@ -1,4 +1,4 @@
-import type { Asset } from "../../assets/entities/Assets.ts";
+import type { Asset } from "@/assets/entities/Assets.ts";
 
 export interface Project {
 	uuid: string;

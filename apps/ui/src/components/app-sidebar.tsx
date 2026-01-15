@@ -6,18 +6,17 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
 	Sidebar,
 	SidebarContent,
+	SidebarEdgeTrigger,
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	SidebarRail,
 } from "@/components/ui/sidebar";
 import { menuItems as dashboardMenuItems } from "@/dashboard/menu";
 import { menuItems as printersMenuItems } from "@/printers/menu";
 import { menuItems as assetMenuItems } from "@/assets/menu";
-import { menuItems as projectMenuItems } from "@/projects/menu";
 import { menuItems as settingsMenuItems } from "@/settings/menu";
 import { menuItems as tempFileMenuItems } from "@/tempfiles/menu";
 import { SettingsContext } from "../core/settings/settingsContext";
@@ -61,10 +60,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	};
 
 	return (
-		<Sidebar {...props}>
+		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
-				<div className="flex items-center justify-center p-4">
-					<IconBrandMantine type="mark" size={30} />
+				<div className="flex items-center justify-center p-4 transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:p-2">
+					<div className="origin-center transition-transform duration-200 ease-linear group-data-[collapsible=icon]:scale-90">
+						<IconBrandMantine type="mark" size={30} />
+					</div>
 				</div>
 			</SidebarHeader>
 			<SidebarContent>
@@ -73,7 +74,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						<SidebarGroupContent>
 							<SidebarMenu>
 								<SidebarMenuItem>
-									<SidebarMenuButton asChild isActive={isActive(item.href)}>
+									<SidebarMenuButton
+										asChild
+										isActive={isActive(item.href)}
+										tooltip={item.label}
+									>
 										<NavLink to={getPath(item.href)}>
 											<item.icon stroke={1.5} />
 											<span>{item.label}</span>
@@ -90,7 +95,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<SidebarMenu>
 						{operationalItems.map((item) => (
 							<SidebarMenuItem key={item.label}>
-								<SidebarMenuButton asChild isActive={isActive(item.href)}>
+								<SidebarMenuButton
+									asChild
+									isActive={isActive(item.href)}
+									tooltip={item.label}
+								>
 									<NavLink to={getPath(item.href)}>
 										<item.icon stroke={1.5} />
 										<span>{item.label}</span>
@@ -100,6 +109,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						))}
 						<SidebarMenuItem>
 							<SidebarMenuButton
+								tooltip="Toggle theme"
 								onClick={() => setTheme(theme === "light" ? "dark" : "light")}
 							>
 								{theme === "dark" && <IconSun stroke={1.5} />}
@@ -115,7 +125,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					</SidebarMenu>
 				</SidebarGroupContent>
 			</SidebarGroup>
-			<SidebarRail />
+			<SidebarEdgeTrigger />
 		</Sidebar>
 	);
 }

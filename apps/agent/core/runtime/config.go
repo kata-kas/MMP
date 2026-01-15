@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	goruntime "runtime"
 
 	"go.uber.org/zap"
 
@@ -20,14 +21,17 @@ type Config struct {
 			EnableFile bool   `json:"enable_file" mapstructure:"enable_file"`
 			Path       string `json:"path" mapstructure:"path"`
 		} `json:"log" mapstructure:"log"`
+		PprofAddr string `json:"pprof_addr"`
 	} `json:"core" mapstructure:"core"`
 	Server struct {
 		Port int `json:"port" mapstructure:"port"`
 	} `json:"server" mapstructure:"server"`
 	Library struct {
-		Path           string   `json:"path" mapstructure:"path"`
-		Blacklist      []string `json:"blacklist" mapstructure:"blacklist"`
-		IgnoreDotFiles bool     `json:"ignore_dot_files" mapstructure:"ignore_dot_files"`
+		Path           string      `json:"path" mapstructure:"path"` // Deprecated: use fileSystems
+		FileSystems    FileSystems `json:"file_systems" mapstructure:"file_systems"`
+		Blacklist      []string    `json:"blacklist" mapstructure:"blacklist"`
+		IgnoreDotFiles bool        `json:"ignore_dot_files" mapstructure:"ignore_dot_files"`
+		RenderBundles  bool        `json:"render_bundles" mapstructure:"render_bundles"`
 	} `json:"library" mapstructure:"library"`
 	Render struct {
 		MaxWorkers      int    `json:"max_workers" mapstructure:"max_workers"`
@@ -41,11 +45,44 @@ type Config struct {
 	} `json:"integrations" mapstructure:"integrations"`
 }
 
+type FileSystem struct {
+	Name    string         `json:"name" mapstructure:"name"`
+	Path    string         `json:"path" mapstructure:"path"`
+	Kind    string         `json:"kind" mapstructure:"kind"`
+	Config  map[string]any `json:"config" mapstructure:"config"`
+	Default bool           `json:"default" mapstructure:"default"`
+}
+
+type FileSystems []FileSystem
+
 var Cfg *Config
 
 var dataPath = "/data"
 
 var initErr error
+
+func defaultLibraryPath() string {
+	if v := os.Getenv("LIBRARY_PATH"); v != "" {
+		return v
+	}
+
+	candidates := []string{
+		"./testdata",
+		"./library",
+		"./apps/agent/testdata",
+		"./apps/agent/library",
+	}
+	for _, p := range candidates {
+		if st, err := os.Stat(p); err == nil && st.IsDir() {
+			return p
+		}
+	}
+
+	if goruntime.GOOS == "darwin" || goruntime.GOOS == "windows" {
+		return "./library"
+	}
+	return "/library"
+}
 
 func init() {
 	defer func() {
@@ -68,16 +105,14 @@ func init() {
 
 	bindEnv()
 
+	libDefault := defaultLibraryPath()
+
 	if v := viper.GetInt("PORT"); v == 0 {
 		viper.SetDefault("server.port", 8000)
 	} else {
 		viper.SetDefault("server.port", v)
 	}
-	if v := viper.GetString("LIBRARY_PATH"); v == "" {
-		viper.SetDefault("library.path", "/library")
-	} else {
-		viper.SetDefault("library.path", v)
-	}
+	viper.SetDefault("library.path", libDefault)
 	if v := viper.GetString("MODEL_RENDER_COLOR"); v == "" {
 		viper.SetDefault("render.model_color", "#167DF0")
 	} else {
@@ -91,6 +126,10 @@ func init() {
 
 	viper.SetDefault("library.blacklist", []string{})
 	viper.SetDefault("library.ignore_dot_files", true)
+	viper.SetDefault("library.render_bundles", false)
+	viper.SetDefault("library.file_systems", []map[string]any{
+		{"name": "default", "path": libDefault, "kind": "local", "default": true},
+	})
 	viper.SetDefault("render.max_workers", 5)
 	viper.SetDefault("core.log.enable_file", false)
 
@@ -121,7 +160,20 @@ func init() {
 		configExists = false
 	}
 
-	if !configExists || cfg.Library.Path == "/library" {
+	if configExists && cfg.Library.Path == "/library" && (goruntime.GOOS == "darwin" || goruntime.GOOS == "windows") {
+		cfg.Library.Path = libDefault
+		for i := range cfg.Library.FileSystems {
+			if cfg.Library.FileSystems[i].Default && cfg.Library.FileSystems[i].Kind == "local" && cfg.Library.FileSystems[i].Path == "/library" {
+				cfg.Library.FileSystems[i].Path = libDefault
+			}
+		}
+	}
+
+	if !filepath.IsAbs(cfg.Library.Path) {
+		_ = os.MkdirAll(cfg.Library.Path, os.ModePerm)
+	}
+
+	if !configExists {
 		SaveConfig(cfg)
 	}
 

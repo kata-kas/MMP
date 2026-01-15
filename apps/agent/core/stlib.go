@@ -7,18 +7,20 @@ import (
 	"net/http"
 	"time"
 
-	"go.uber.org/zap"
-
 	assettypes "github.com/eduardooliveira/stLib/core/api/assetTypes"
 	"github.com/eduardooliveira/stLib/core/api/assets"
 	"github.com/eduardooliveira/stLib/core/api/system"
 	"github.com/eduardooliveira/stLib/core/api/tags"
 	"github.com/eduardooliveira/stLib/core/api/tempfiles"
-	"github.com/eduardooliveira/stLib/core/data/database"
 	"github.com/eduardooliveira/stLib/core/downloader"
 	"github.com/eduardooliveira/stLib/core/events"
 	"github.com/eduardooliveira/stLib/core/integrations/printers"
 	"github.com/eduardooliveira/stLib/core/integrations/slicer"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/eduardooliveira/stLib/core/data/database"
+	"github.com/eduardooliveira/stLib/core/libfs"
 	"github.com/eduardooliveira/stLib/core/processing"
 	"github.com/eduardooliveira/stLib/core/runtime"
 	"github.com/eduardooliveira/stLib/core/state"
@@ -31,34 +33,18 @@ func Run(ctx context.Context, logger *zap.Logger) error {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 
+	if err := libfs.LoadFSs(); err != nil {
+		return fmt.Errorf("failed to load filesystems: %w", err)
+	}
+
 	if err := state.LoadAssetTypes(); err != nil {
 		return fmt.Errorf("failed to load asset types: %w", err)
 	}
-
-	discoveryCtx, discoveryCancel := context.WithCancel(ctx)
-	defer discoveryCancel()
-
-	discoveryErrChan := make(chan error, 1)
-	go func() {
-		if err := processing.ProcessFolder(discoveryCtx, runtime.Cfg.Library.Path, logger); err != nil {
-			discoveryErrChan <- fmt.Errorf("error discovering projects: %w", err)
-			return
-		}
-		logger.Info("discovery finished")
-	}()
-
-	tempDiscoveryErrChan := make(chan error, 1)
-	go func() {
-		if err := processing.RunTempDiscovery(logger); err != nil {
-			tempDiscoveryErrChan <- fmt.Errorf("error running temp discovery: %w", err)
-		}
-	}()
 
 	if err := state.LoadPrinters(); err != nil {
 		return fmt.Errorf("failed to load printers: %w", err)
 	}
 
-	logger.Info("starting server", zap.Int("port", runtime.Cfg.Server.Port))
 	e := echo.New()
 	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
@@ -82,33 +68,49 @@ func Run(ctx context.Context, logger *zap.Logger) error {
 		Handler: e,
 	}
 
-	serverErrChan := make(chan error, 1)
-	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serverErrChan <- fmt.Errorf("server error: %w", err)
-		}
-	}()
+	g, gCtx := errgroup.WithContext(ctx)
 
-	select {
-	case err := <-discoveryErrChan:
-		logger.Error("discovery error", zap.Error(err))
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer shutdownCancel()
-		server.Shutdown(shutdownCtx)
-		return err
-	case err := <-tempDiscoveryErrChan:
-		logger.Error("temp discovery error", zap.Error(err))
-	case err := <-serverErrChan:
-		return err
-	case <-ctx.Done():
-		logger.Info("shutting down server")
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer shutdownCancel()
+	g.Go(func() error {
+		logger.Info("starting filesystem discovery")
+		if err := processing.ScanFS(gCtx, logger); err != nil {
+			return fmt.Errorf("filesystem discovery failed: %w", err)
+		}
+		logger.Info("filesystem discovery completed")
+		return nil
+	})
+
+	g.Go(func() error {
+		logger.Info("starting temp file discovery")
+		if err := processing.RunTempDiscovery(logger); err != nil {
+			return fmt.Errorf("temp discovery failed: %w", err)
+		}
+		logger.Info("temp file discovery completed")
+		return nil
+	})
+
+	g.Go(func() error {
+		logger.Info("starting server", zap.Int("port", runtime.Cfg.Server.Port))
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("server error: %w", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		<-gCtx.Done()
+		logger.Info("shutdown signal received")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			return fmt.Errorf("server shutdown error: %w", err)
+			return fmt.Errorf("server shutdown failed: %w", err)
 		}
 		logger.Info("server shutdown complete")
 		return nil
+	})
+	if err := g.Wait(); err != nil {
+		logger.Error("service error", zap.Error(err))
+		return err
 	}
 
 	return nil
